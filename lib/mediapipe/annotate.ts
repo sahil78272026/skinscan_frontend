@@ -14,7 +14,7 @@ export function drawAnnotation(
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   // Reset collision tracker for each render frame
-  // @ts-ignore
+  // @ts-expect-error: Custom property injected on canvas
   canvas.__boxPositions = { left: [], right: [] };
   
   // Draw base image
@@ -91,9 +91,9 @@ export function drawAnnotation(
         
         // --- Collision Avoidance ---
         // (Hack: using a global/static-like object on the canvas element for this render pass)
-        // @ts-ignore
+        // @ts-expect-error: Custom property injected on canvas
         if (!canvas.__boxPositions) canvas.__boxPositions = { left: [], right: [] };
-        // @ts-ignore
+        // @ts-expect-error: Custom property injected on canvas
         const sideBoxes = isLeft ? canvas.__boxPositions.left : canvas.__boxPositions.right;
         
         let targetY = cy;
