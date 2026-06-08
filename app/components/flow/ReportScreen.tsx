@@ -176,13 +176,13 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
           </div>
         )}
         
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-80 pointer-events-none" />
         
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="absolute bottom-0 left-0 right-0 p-6 text-white"
+          className="absolute bottom-0 left-0 right-0 p-6 text-white pointer-events-none"
         >
           <h1 className="font-display text-3xl mb-1">Your Analysis</h1>
           <p className="text-white/80 flex items-center gap-2">

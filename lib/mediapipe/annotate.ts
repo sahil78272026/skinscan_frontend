@@ -77,10 +77,10 @@ export function drawAnnotation(
           text = text.substring(0, 15) + "...";
         }
         
-        ctx.font = "bold 16px sans-serif";
+        ctx.font = "bold 20px sans-serif";
         const textWidth = ctx.measureText(text).width;
-        const paddingX = 10;
-        const boxHeight = 28;
+        const paddingX = 14;
+        const boxHeight = 36;
         const boxWidth = textWidth + (paddingX * 2);
         
         const isLeft = cx < w / 2;
