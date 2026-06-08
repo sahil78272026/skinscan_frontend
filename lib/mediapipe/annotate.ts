@@ -77,17 +77,22 @@ export function drawAnnotation(
           text = text.substring(0, 15) + "...";
         }
         
-        ctx.font = "bold 12px sans-serif";
+        ctx.font = "bold 16px sans-serif";
         const textWidth = ctx.measureText(text).width;
-        const paddingX = 6;
-        const boxHeight = 22;
+        const paddingX = 10;
+        const boxHeight = 28;
         const boxWidth = textWidth + (paddingX * 2);
         
         const isLeft = cx < w / 2;
         const edgeMargin = 8;
         
-        // Calculate target positions
-        const targetX = isLeft ? edgeMargin : w - edgeMargin - boxWidth;
+        // Calculate target positions closer to the face
+        const offset = 50; // pixels away from the face feature
+        let targetX = isLeft ? cx - boxWidth - offset : cx + offset;
+        
+        // Keep within horizontal bounds
+        if (targetX < edgeMargin) targetX = edgeMargin;
+        if (targetX + boxWidth > w - edgeMargin) targetX = w - edgeMargin - boxWidth;
         
         // --- Collision Avoidance ---
         // (Hack: using a global/static-like object on the canvas element for this render pass)

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { AnalysisOut, ZoneObservation } from "../../../lib/types";
 import { getFaceLandmarker } from "../../../lib/mediapipe/faceMesh";
 import { drawAnnotation } from "../../../lib/mediapipe/annotate";
-import { Sparkles, Download, Share2, RefreshCw, ChevronDown, ChevronUp, Sun, Moon, Droplets, Heart } from "lucide-react";
+import { Sparkles, Download, Share2, RefreshCw, ChevronDown, ChevronUp, Sun, Moon, Droplets, Heart, X, ZoomIn } from "lucide-react";
 
 interface Props {
   analysisResult: AnalysisOut;
@@ -80,6 +80,8 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
   const [photoUrl, setPhotoUrl] = useState<string>("");
   const [annotatedUrl, setAnnotatedUrl] = useState<string>("");
   const [shareSupported, setShareSupported] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   useEffect(() => {
     setShareSupported(!!navigator.share);
@@ -152,9 +154,20 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
       {/* Hero Header */}
       <div className="relative w-full h-[50vh] bg-gray-900 rounded-b-3xl overflow-hidden shadow-lg">
         {annotatedUrl ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full h-full">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full h-full relative group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={annotatedUrl} alt="Annotated selfie" className="w-full h-full object-contain" />
+            <img 
+              src={annotatedUrl} 
+              alt="Annotated selfie" 
+              className="w-full h-full object-contain cursor-zoom-in" 
+              onClick={() => setIsFullscreen(true)}
+            />
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="bg-black/50 text-white px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-sm">
+                <ZoomIn size={18} />
+                <span className="text-sm font-medium">Tap to zoom</span>
+              </div>
+            </div>
           </motion.div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3">
@@ -313,6 +326,46 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
           Cosmetic analysis only. Not medical advice.
         </p>
       </div>
+
+      {/* Fullscreen Zoom Modal */}
+      <AnimatePresence>
+        {isFullscreen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 flex flex-col"
+          >
+            <div className="flex-none p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/80 to-transparent">
+              <span className="text-white/80 text-sm font-medium">Tap image to toggle zoom</span>
+              <button 
+                onClick={() => {
+                  setIsFullscreen(false);
+                  setZoomLevel(1);
+                }}
+                className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/20 active:scale-90 transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-auto flex items-center justify-center p-2 relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={annotatedUrl} 
+                alt="Zoomable annotated selfie" 
+                onClick={() => setZoomLevel(z => z === 1 ? 2.5 : 1)}
+                style={{ 
+                  transform: `scale(${zoomLevel})`, 
+                  transformOrigin: 'center center',
+                  transition: 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                }}
+                className={`max-w-full max-h-full object-contain ${zoomLevel === 1 ? 'cursor-zoom-in' : 'cursor-zoom-out'}`}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
