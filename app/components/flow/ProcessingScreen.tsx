@@ -38,8 +38,11 @@ export default function ProcessingScreen({ token, photoBlob, onSuccess, onError 
   }, []);
 
   useEffect(() => {
+    // Wait for the Turnstile widget to generate a real token
+    if (!turnstileToken) return;
+    
     let mounted = true;
-    submitAnalysis(token, photoBlob, turnstileToken || "dummy")
+    submitAnalysis(token, photoBlob, turnstileToken)
       .then(res => {
         if (mounted) onSuccess(res);
       })
