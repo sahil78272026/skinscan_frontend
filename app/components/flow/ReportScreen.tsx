@@ -154,7 +154,7 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
         {annotatedUrl ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full h-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={annotatedUrl} alt="Annotated selfie" className="w-full h-full object-cover transform scale-x-[-1]" />
+            <img src={annotatedUrl} alt="Annotated selfie" className="w-full h-full object-contain" />
           </motion.div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3">
