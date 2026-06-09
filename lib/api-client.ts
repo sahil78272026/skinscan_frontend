@@ -30,13 +30,11 @@ export async function loginWithEmail(
 export async function submitAnalysis(
   token: string,
   file: Blob,
-  turnstileToken: string,
   ageRange?: string,
   primaryConcern?: string
 ): Promise<AnalysisOut> {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("turnstile_token", turnstileToken);
   if (ageRange) formData.append("age_range", ageRange);
   if (primaryConcern) formData.append("primary_concern", primaryConcern);
 

@@ -1,8 +1,7 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { submitAnalysis } from "../../../lib/api-client";
 import { AnalysisOut } from "../../../lib/types";
-import { Turnstile } from '@marsidev/react-turnstile';
 
 interface Props {
   token: string;
@@ -21,7 +20,6 @@ const STEPS = [
 
 export default function ProcessingScreen({ token, photoBlob, onSuccess, onError }: Props) {
   const [stepIdx, setStepIdx] = useState(0);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // Create a preview URL for the scanning animation
   const previewUrl = useMemo(() => URL.createObjectURL(photoBlob), [photoBlob]);
@@ -37,23 +35,21 @@ export default function ProcessingScreen({ token, photoBlob, onSuccess, onError 
     return () => clearInterval(interval);
   }, []);
 
+  const hasFired = useRef(false);
+
   useEffect(() => {
-    // Wait for the Turnstile widget to generate a real token
-    if (!turnstileToken) return;
+    if (hasFired.current) return;
+    hasFired.current = true;
     
-    let mounted = true;
-    submitAnalysis(token, photoBlob, turnstileToken)
+    submitAnalysis(token, photoBlob)
       .then(res => {
-        if (mounted) onSuccess(res);
+        onSuccess(res);
       })
       .catch(err => {
-        if (mounted) onError(err.message);
+        onError(err.message);
+        hasFired.current = false; // allow retry on error if needed
       });
-
-    return () => {
-      mounted = false;
-    };
-  }, [token, photoBlob, turnstileToken, onSuccess, onError]);
+  }, [token, photoBlob, onSuccess, onError]);
 
   return (
     <div className="flex flex-col h-screen w-full bg-gray-900 justify-center items-center overflow-hidden relative">
@@ -109,14 +105,6 @@ export default function ProcessingScreen({ token, photoBlob, onSuccess, onError 
             }`}
           />
         ))}
-      </div>
-      
-      {/* Hidden Turnstile */}
-      <div className="absolute opacity-0 pointer-events-none">
-        <Turnstile 
-          siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!} 
-          onSuccess={(t) => setTurnstileToken(t)}
-        />
       </div>
     </div>
   );
