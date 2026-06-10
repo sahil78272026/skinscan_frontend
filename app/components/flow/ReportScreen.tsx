@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AnalysisOut, ZoneObservation } from "../../../lib/types";
 import { getFaceLandmarker } from "../../../lib/mediapipe/faceMesh";
 import { drawAnnotation } from "../../../lib/mediapipe/annotate";
-import { Sparkles, Download, Share2, RefreshCw, ChevronDown, ChevronUp, Sun, Moon, Droplets, Heart, X, ZoomIn } from "lucide-react";
+import { Sparkles, Download, Share2, RefreshCw, Sun, Moon, Droplets, Heart, X, ZoomIn } from "lucide-react";
 
 interface Props {
   analysisResult: AnalysisOut;
