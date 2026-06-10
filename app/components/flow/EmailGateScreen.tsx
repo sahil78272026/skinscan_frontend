@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Card } from "../ui/Card";
@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { loginWithEmail } from "../../../lib/api-client";
 import { Turnstile } from '@marsidev/react-turnstile';
+import { useVisibility } from "../../hooks/useVisibility";
 
 interface Props {
   consentAnalysis: boolean;
@@ -19,6 +20,17 @@ export default function EmailGateScreen({ consentAnalysis, consentPhoto, onSucce
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileKey, setTurnstileKey] = useState(0);
+  
+  const isVisible = useVisibility();
+
+  // Reset turnstile if user comes back from background to prevent expired token issues
+  useEffect(() => {
+    if (isVisible) {
+      setTurnstileKey(k => k + 1);
+      setTurnstileToken("");
+    }
+  }, [isVisible]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +92,7 @@ export default function EmailGateScreen({ consentAnalysis, consentPhoto, onSucce
             
             <div className="flex justify-center py-2">
               <Turnstile 
+                key={turnstileKey}
                 siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!} 
                 onSuccess={(token) => setTurnstileToken(token)}
               />

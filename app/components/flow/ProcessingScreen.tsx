@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { submitAnalysis } from "../../../lib/api-client";
+import { useVisibility } from "../../hooks/useVisibility";
 import { AnalysisOut } from "../../../lib/types";
 
 interface Props {
@@ -28,12 +29,15 @@ export default function ProcessingScreen({ token, photoBlob, onSuccess, onError 
     return () => URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
 
+  const isVisible = useVisibility();
+
   useEffect(() => {
+    if (!isVisible) return;
     const interval = setInterval(() => {
       setStepIdx(i => Math.min(i + 1, STEPS.length - 1));
-    }, 2500);
+    }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isVisible]);
 
   const hasFired = useRef(false);
 
@@ -59,7 +63,13 @@ export default function ProcessingScreen({ token, photoBlob, onSuccess, onError 
       </div>
       
       {/* Scanning animation with selfie preview */}
-      <div className="relative w-52 h-72 border border-white/20 rounded-3xl overflow-hidden mb-12 shadow-[0_0_60px_rgba(233,184,59,0.08)]">
+      <div className="relative w-52 h-72 border border-white/20 rounded-3xl overflow-hidden mb-8 shadow-[0_0_60px_rgba(233,184,59,0.08)]">
+        {/* Disclaimer Overlay */}
+        <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent pt-4 pb-6 px-3 text-center">
+          <p className="text-[10px] uppercase tracking-widest text-gold-400 font-bold mb-1">Heavy Image</p>
+          <p className="text-[10px] text-white/80 leading-tight">Processing may take 10-15 seconds.</p>
+        </div>
+
         {/* Blurred selfie preview */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img 

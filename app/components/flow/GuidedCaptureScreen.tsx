@@ -3,6 +3,7 @@ import { Button } from "../ui/Button";
 import { ArrowLeft, Camera, Upload } from "lucide-react";
 import { motion } from "framer-motion";
 import { getFaceLandmarkerVideo } from "../../../lib/mediapipe/faceMesh";
+import { useVisibility } from "../../hooks/useVisibility";
 
 interface Props {
   onCapture: (blob: Blob) => void;
@@ -25,7 +26,15 @@ export default function GuidedCaptureScreen({ onCapture, onBack }: Props) {
     }
   }, []);
 
+  const isVisible = useVisibility();
+
   useEffect(() => {
+    if (!isVisible) {
+      stopStream();
+      setHint("Paused...");
+      return;
+    }
+
     let active = true;
     let landmarker: ReturnType<typeof getFaceLandmarkerVideo> extends Promise<infer T> ? T : never;
     let animationId: number;
@@ -99,7 +108,7 @@ export default function GuidedCaptureScreen({ onCapture, onBack }: Props) {
       if (animationId) cancelAnimationFrame(animationId);
       stopStream();
     };
-  }, [stopStream]);
+  }, [stopStream, isVisible]);
 
   const handleCapture = () => {
     if (!videoRef.current || !canvasRef.current) return;
