@@ -11,7 +11,7 @@ export function drawAnnotation(
   const zoneCoords: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
   const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+  if (!ctx) return zoneCoords;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
