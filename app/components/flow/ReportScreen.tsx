@@ -29,50 +29,7 @@ const SEVERITY_STYLES: Record<string, { bg: string; text: string; dot: string; l
   severe:   { bg: "bg-terracotta-50",  text: "text-terracotta-700", dot: "bg-terracotta-500",  label: "Needs Attention" },
 };
 
-function ZoneCard({ zoneName, observation }: { zoneName: string; observation: ZoneObservation }) {
-  const [expanded, setExpanded] = useState(false);
-  const style = SEVERITY_STYLES[observation.severity] || SEVERITY_STYLES.none;
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 8 }} 
-      animate={{ opacity: 1, y: 0 }}
-      className={`rounded-xl border border-gray-100 overflow-hidden ${style.bg}`}
-    >
-      <button 
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-3.5 text-left"
-      >
-        <div className="flex items-center gap-3">
-          <div className={`w-2.5 h-2.5 rounded-full ${style.dot}`} />
-          <span className="font-semibold text-sm text-gray-900">{ZONE_LABELS[zoneName] || zoneName}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
-            {style.label}
-          </span>
-          {expanded ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-        </div>
-      </button>
-      {expanded && observation.observations && observation.observations.length > 0 && (
-        <motion.div 
-          initial={{ height: 0, opacity: 0 }} 
-          animate={{ height: "auto", opacity: 1 }}
-          className="px-4 pb-3"
-        >
-          <ul className="space-y-1.5">
-            {observation.observations.map((obs, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="text-gray-400 mt-0.5">·</span>
-                <span>{obs}</span>
-              </li>
-            ))}
-          </ul>
-        </motion.div>
-      )}
-    </motion.div>
-  );
-}
+// ZoneCard component removed, replaced by inline Carousel
 
 export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -82,6 +39,7 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
   const [shareSupported, setShareSupported] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoneCoords, setZoneCoords] = useState<Record<string, {x: number, y: number, w: number, h: number}>>({});
 
   useEffect(() => {
     setShareSupported(!!navigator.share);
@@ -104,7 +62,8 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
     try {
       const landmarker = await getFaceLandmarker();
       const result = landmarker.detect(img);
-      drawAnnotation(canvas, img, result, analysisResult.result_json);
+      const coords = drawAnnotation(canvas, img, result, analysisResult.result_json);
+      setZoneCoords(coords);
       setAnnotatedUrl(canvas.toDataURL("image/jpeg", 0.9));
     } catch (e) {
       console.error("Failed to annotate:", e);
@@ -235,10 +194,56 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
               <Droplets size={18} className="text-blue-500" />
               Zone Breakdown
             </h3>
-            <div className="space-y-2">
-              {zones.map(([zoneName, obs]) => (
-                <ZoneCard key={zoneName} zoneName={zoneName} observation={obs as ZoneObservation} />
-              ))}
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-5 px-5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {zones.map(([zoneName, obs]) => {
+                const observation = obs as ZoneObservation;
+                const style = SEVERITY_STYLES[observation.severity] || SEVERITY_STYLES.none;
+                const coords = zoneCoords[zoneName];
+                
+                return (
+                  <div 
+                    key={zoneName} 
+                    className={`flex-none w-64 snap-center rounded-2xl border border-gray-100 overflow-hidden ${style.bg} shadow-sm`}
+                  >
+                    <div className="w-full h-48 relative overflow-hidden bg-gray-900">
+                      {photoUrl && coords ? (
+                        <img 
+                          src={photoUrl} 
+                          alt={zoneName}
+                          className="absolute w-full h-full object-cover transition-transform duration-700 ease-out"
+                          style={{
+                            transformOrigin: `${coords.x * 100}% ${coords.y * 100}%`,
+                            transform: `scale(${Math.max(2.5, Math.min(6, 0.8 / (coords.w || 0.3)))})`
+                          }}
+                        />
+                      ) : (
+                         <div className="w-full h-full flex items-center justify-center text-white/50 text-xs">Processing...</div>
+                      )}
+                      
+                      <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
+                         <span className={`text-[10px] font-bold uppercase tracking-wider ${style.text}`}>
+                           {style.label}
+                         </span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={`w-2.5 h-2.5 rounded-full ${style.dot}`} />
+                        <span className="font-bold text-gray-900">{ZONE_LABELS[zoneName] || zoneName}</span>
+                      </div>
+                      <ul className="space-y-1.5">
+                        {observation.observations?.map((o, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-gray-700">
+                            <span className="text-gray-400 mt-0.5">·</span>
+                            <span className="leading-relaxed">{o}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </motion.section>
         )}

@@ -7,7 +7,9 @@ export function drawAnnotation(
   image: HTMLImageElement | HTMLVideoElement,
   landmarkerResult: FaceLandmarkerResult,
   analysis: AnalysisResult
-) {
+): Record<string, { x: number, y: number, w: number, h: number }> {
+  const zoneCoords: Record<string, { x: number, y: number, w: number, h: number }> = {};
+
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
@@ -21,7 +23,7 @@ export function drawAnnotation(
   ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
   if (!landmarkerResult || !landmarkerResult.faceLandmarks || landmarkerResult.faceLandmarks.length === 0) {
-    return;
+    return zoneCoords;
   }
 
   const landmarks = landmarkerResult.faceLandmarks[0];
@@ -63,13 +65,28 @@ export function drawAnnotation(
       // Draw label (Callout)
       // Find center of the zone
       let cx = 0, cy = 0, count = 0;
+      let minX = 1, maxX = 0, minY = 1, maxY = 0;
+      
       indices.forEach(index => {
         const pt = landmarks[index];
-        if (pt) { cx += pt.x * w; cy += pt.y * h; count++; }
+        if (pt) { 
+          cx += pt.x * w; cy += pt.y * h; count++; 
+          if (pt.x < minX) minX = pt.x;
+          if (pt.x > maxX) maxX = pt.x;
+          if (pt.y < minY) minY = pt.y;
+          if (pt.y > maxY) maxY = pt.y;
+        }
       });
       
       if (count > 0) {
         cx /= count; cy /= count;
+        
+        zoneCoords[zoneName] = {
+          x: cx / w,
+          y: cy / h,
+          w: maxX - minX,
+          h: maxY - minY
+        };
         
         let text = observation.observations[0]; 
         // Truncate text if it's too long so it fits on mobile screens
@@ -163,4 +180,5 @@ export function drawAnnotation(
       }
     });
   }
+  return zoneCoords;
 }
