@@ -34,36 +34,10 @@ export function drawAnnotation(
   if (analysis.zones) {
     Object.entries(analysis.zones).forEach(([zoneName, observation]) => {
       if (!observation || !observation.observations || observation.observations.length === 0) return;
-      if (observation.severity === "none") return;
 
       const indices = ZONE_LANDMARKS[zoneName as keyof typeof ZONE_LANDMARKS];
       if (!indices) return;
 
-      // Draw subtle highlight
-      ctx.beginPath();
-      indices.forEach((index, i) => {
-        const pt = landmarks[index];
-        if (!pt) return;
-        if (i === 0) {
-          ctx.moveTo(pt.x * w, pt.y * h);
-        } else {
-          ctx.lineTo(pt.x * w, pt.y * h);
-        }
-      });
-      ctx.closePath();
-      
-      let fillColor = "rgba(255, 255, 255, 0.1)";
-      if (observation.severity === "severe") fillColor = "rgba(224, 122, 95, 0.25)"; // Terracotta
-      else if (observation.severity === "moderate") fillColor = "rgba(233, 184, 59, 0.25)"; // Gold
-      
-      ctx.fillStyle = fillColor;
-      ctx.fill();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      // Draw label (Callout)
-      // Find center of the zone
       let cx = 0, cy = 0, count = 0;
       let minX = 1, maxX = 0, minY = 1, maxY = 0;
       
@@ -92,7 +66,34 @@ export function drawAnnotation(
           w: maxX - minX,
           h: maxY - minY
         };
-        
+      }
+
+      if (observation.severity === "none") return;
+
+      // Draw subtle highlight
+      ctx.beginPath();
+      indices.forEach((index, i) => {
+        const pt = landmarks[index];
+        if (!pt) return;
+        if (i === 0) {
+          ctx.moveTo(pt.x * w, pt.y * h);
+        } else {
+          ctx.lineTo(pt.x * w, pt.y * h);
+        }
+      });
+      ctx.closePath();
+      
+      let fillColor = "rgba(255, 255, 255, 0.1)";
+      if (observation.severity === "severe") fillColor = "rgba(224, 122, 95, 0.25)"; // Terracotta
+      else if (observation.severity === "moderate") fillColor = "rgba(233, 184, 59, 0.25)"; // Gold
+      
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      if (count > 0) {
         let text = observation.observations[0]; 
         // Truncate text if it's too long so it fits on mobile screens
         if (text.length > 18) {

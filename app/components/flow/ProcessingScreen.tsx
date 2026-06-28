@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getFaceLandmarker } from "../../../lib/mediapipe/faceMesh";
 import { submitAnalysis } from "../../../lib/api-client";
 import { useVisibility } from "../../hooks/useVisibility";
 import { AnalysisOut } from "../../../lib/types";
@@ -30,6 +31,11 @@ export default function ProcessingScreen({ token, photoBlob, onSuccess, onError 
   }, [previewUrl]);
 
   const isVisible = useVisibility();
+
+  // Pre-load MediaPipe in the background so ReportScreen is instant
+  useEffect(() => {
+    getFaceLandmarker().catch(err => console.error("MediaPipe preload failed:", err));
+  }, []);
 
   useEffect(() => {
     if (!isVisible) return;
