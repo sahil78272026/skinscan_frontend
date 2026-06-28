@@ -118,7 +118,7 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
             <img 
               src={annotatedUrl} 
               alt="Annotated selfie" 
-              className="w-full h-full object-contain cursor-zoom-in" 
+              className="w-full h-full object-cover object-center cursor-zoom-in" 
               onClick={() => setIsFullscreen(true)}
             />
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

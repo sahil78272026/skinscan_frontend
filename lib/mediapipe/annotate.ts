@@ -81,6 +81,11 @@ export function drawAnnotation(
       if (count > 0) {
         cx /= count; cy /= count;
         
+        // Fix the math for U-shaped jawline: pull the center down to the actual chin
+        if (zoneName === "chin_jawline") {
+          cy = (minY + (maxY - minY) * 0.85) * h;
+        }
+        
         zoneCoords[zoneName] = {
           x: cx / w,
           y: cy / h,
