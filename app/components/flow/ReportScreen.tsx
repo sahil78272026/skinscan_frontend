@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AnalysisOut, ZoneObservation } from "../../../lib/types";
 import { getFaceLandmarker } from "../../../lib/mediapipe/faceMesh";
 import { drawAnnotation } from "../../../lib/mediapipe/annotate";
-import { Sparkles, Download, Share2, RefreshCw, Sun, Moon, Droplets, Heart, X, ZoomIn } from "lucide-react";
+import { Sparkles, Download, Share2, RefreshCw, Sun, Moon, Droplets, Heart, X, ZoomIn, ShoppingBag, ExternalLink } from "lucide-react";
 
 interface Props {
   analysisResult: AnalysisOut;
@@ -28,6 +28,19 @@ const SEVERITY_STYLES: Record<string, { bg: string; text: string; dot: string; l
   moderate: { bg: "bg-orange-50",      text: "text-orange-700",     dot: "bg-orange-400",      label: "Moderate" },
   severe:   { bg: "bg-terracotta-50",  text: "text-terracotta-700", dot: "bg-terracotta-500",  label: "Needs Attention" },
 };
+
+const DUMMY_PRODUCTS = [
+  { id: 1, name: "CeraVe Hydrating Facial Cleanser", type: "Cleanser", tags: ["dry", "dehydrated", "sensitive"], price: "$14.99" },
+  { id: 2, name: "CeraVe Renewing SA Cleanser", type: "Cleanser", tags: ["oily", "acne", "blemishes", "texture"], price: "$15.99" },
+  { id: 3, name: "The Ordinary Niacinamide 10%", type: "Serum", tags: ["pores", "oily", "texture"], price: "$6.00" },
+  { id: 4, name: "Paula's Choice 2% BHA", type: "Exfoliant", tags: ["blemishes", "pores", "texture", "acne"], price: "$34.00" },
+  { id: 5, name: "TruSkin Vitamin C Serum", type: "Serum", tags: ["dark spots", "dull", "uneven tone"], price: "$21.99" },
+  { id: 6, name: "La Roche-Posay Hyaluronic Acid", type: "Serum", tags: ["dehydrated", "dry", "fine lines"], price: "$39.99" },
+  { id: 7, name: "Neutrogena Hydro Boost Water Gel", type: "Moisturizer", tags: ["oily", "combination"], price: "$19.99" },
+  { id: 8, name: "CeraVe Moisturizing Cream", type: "Moisturizer", tags: ["dry", "sensitive"], price: "$17.99" },
+  { id: 9, name: "Supergoop! Unseen Sunscreen", type: "SPF", tags: ["all"], price: "$38.00" },
+  { id: 10, name: "CeraVe Eye Repair Cream", type: "Eye Cream", tags: ["dark circles", "under_eye"], price: "$14.50" },
+];
 
 // ZoneCard component removed, replaced by inline Carousel
 
@@ -102,6 +115,28 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
 
   const analysis = analysisResult.result_json;
   const zones = analysis.zones ? Object.entries(analysis.zones) : [];
+
+  // Match products based on analysis
+  const recommendedProducts = (() => {
+    const concerns = (analysis.top_concerns || []).map(c => c.toLowerCase());
+    const skinType = (analysis.skin_type || "").toLowerCase();
+    
+    // Create a combined string of all concerns to check against
+    const searchString = [...concerns, skinType].join(" ");
+
+    const matches = DUMMY_PRODUCTS.filter(p => {
+      if (p.tags.includes("all")) return true;
+      return p.tags.some(tag => searchString.includes(tag));
+    });
+    
+    // Sort so specific matches come first, generic ("all") comes last
+    matches.sort((a, b) => (a.tags.includes("all") ? 1 : 0) - (b.tags.includes("all") ? 1 : 0));
+    
+    // Fallback if no specific matches
+    if (matches.length === 0) return DUMMY_PRODUCTS.slice(0, 3);
+    
+    return matches.slice(0, 4); // Show top 4
+  })();
 
   return (
     <div className="w-full min-h-screen bg-peach-50 max-w-md mx-auto pb-24">
@@ -284,6 +319,40 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
             </div>
           </motion.section>
         )}
+
+        {/* Product Recommendations */}
+        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.50 }}>
+          <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <ShoppingBag size={18} className="text-gold-500" />
+            Recommended Products
+          </h3>
+          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-5 px-5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {recommendedProducts.map((product) => (
+              <div 
+                key={product.id} 
+                className="flex-none w-40 snap-center rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden flex flex-col"
+              >
+                <div className="h-32 bg-gray-50 flex items-center justify-center border-b border-gray-100 relative">
+                  <div className="w-16 h-16 rounded-full bg-peach-100 flex items-center justify-center">
+                    <ShoppingBag className="text-peach-400" size={24} />
+                  </div>
+                  <span className="absolute top-2 left-2 text-[9px] font-bold uppercase tracking-wider text-gray-500 bg-white px-2 py-0.5 rounded-full shadow-sm">
+                    {product.type}
+                  </span>
+                </div>
+                <div className="p-3 flex-1 flex flex-col">
+                  <h4 className="font-bold text-sm text-gray-900 leading-tight mb-1 line-clamp-2 flex-1">{product.name}</h4>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+                    <span className="text-terracotta-600 font-bold text-sm">{product.price}</span>
+                    <button className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center hover:scale-105 transition-transform">
+                      <ExternalLink size={12} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.section>
 
         {/* Lifestyle Nudges */}
         {analysis.lifestyle_nudges && analysis.lifestyle_nudges.length > 0 && (
