@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import LandingScreen from "./components/flow/LandingScreen";
 import GuidedCaptureScreen from "./components/flow/GuidedCaptureScreen";
 import PreviewScreen from "./components/flow/PreviewScreen";
@@ -8,6 +8,7 @@ import EmailGateScreen from "./components/flow/EmailGateScreen";
 import ProcessingScreen from "./components/flow/ProcessingScreen";
 import ReportScreen from "./components/flow/ReportScreen";
 import { AnalysisOut } from "../lib/types";
+import { getFaceLandmarkerVideo } from "../lib/mediapipe/faceMesh";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertTriangle } from "lucide-react";
 
@@ -36,6 +37,11 @@ export default function Home() {
     setPhotoBlob(null);
     setAnalysisResult(null);
   };
+
+  // Preload MediaPipe camera model silently in the background
+  useEffect(() => {
+    getFaceLandmarkerVideo().catch(err => console.error("MediaPipe video preload failed:", err));
+  }, []);
 
   const showError = useCallback((msg: string) => {
     setErrorToast(msg);

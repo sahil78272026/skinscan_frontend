@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "../ui/Button";
 import { ArrowLeft, Camera, Upload } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { getFaceLandmarkerVideo } from "../../../lib/mediapipe/faceMesh";
 import { useVisibility } from "../../hooks/useVisibility";
 
@@ -18,6 +18,7 @@ export default function GuidedCaptureScreen({ onCapture, onBack }: Props) {
   const [hint, setHint] = useState("Loading camera...");
   const [canCapture, setCanCapture] = useState(false);
   const [cameraFailed, setCameraFailed] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   const stopStream = useCallback(() => {
     if (streamRef.current) {
@@ -111,22 +112,29 @@ export default function GuidedCaptureScreen({ onCapture, onBack }: Props) {
   }, [stopStream, isVisible]);
 
   const handleCapture = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
+    if (!videoRef.current || !canvasRef.current || isCapturing) return;
+    setIsCapturing(true);
+    setHint("Capturing...");
     
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((blob) => {
-        if (blob) {
-          stopStream();
-          onCapture(blob);
-        }
-      }, "image/jpeg", 0.9);
-    }
+    // Allow React to render the flash effect and text before blocking the main thread
+    setTimeout(() => {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      if (!canvas || !video) return;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            stopStream();
+            onCapture(blob);
+          }
+        }, "image/jpeg", 0.9);
+      }
+    }, 50);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,6 +176,21 @@ export default function GuidedCaptureScreen({ onCapture, onBack }: Props) {
         <div className="w-10"></div>
       </div>
 
+      {/* Capture Loading Overlay */}
+      <AnimatePresence>
+        {isCapturing && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md"
+          >
+            <div className="w-16 h-16 border-4 border-white/20 border-t-gold-500 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(233,184,59,0.5)]" />
+            <p className="text-white font-medium text-lg tracking-wide animate-pulse">Saving high-res photo...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Camera view or upload fallback */}
       {!cameraFailed ? (
         <div className="relative flex-1 w-full h-full overflow-hidden flex items-center justify-center">
@@ -181,7 +204,7 @@ export default function GuidedCaptureScreen({ onCapture, onBack }: Props) {
           {/* Oval overlay frame */}
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
             <div 
-              className="w-[70%] h-[55%] border-2 rounded-[50%] shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] transition-colors duration-500" 
+              className="w-[85%] h-[65%] max-h-[500px] max-w-sm border-2 rounded-[50%] shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] transition-colors duration-500" 
               style={{ borderColor: canCapture ? '#e9b83b' : 'rgba(255,255,255,0.5)' }}
             />
           </div>
