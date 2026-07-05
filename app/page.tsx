@@ -16,7 +16,6 @@ export type FlowState =
   | "landing" 
   | "capture" 
   | "preview" 
-  | "email" 
   | "processing" 
   | "report";
 
@@ -27,6 +26,7 @@ export default function Home() {
   const [consentPhoto, setConsentPhoto] = useState(false);
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [analysisResult, setAnalysisResult] = useState<AnalysisOut | null>(null);
   const [errorToast, setErrorToast] = useState<string | null>(null);
 
@@ -87,28 +87,17 @@ export default function Home() {
             setPhotoBlob(null);
             setState("capture");
           }}
-          onNext={() => {
-            if (token) setState("processing");
-            else setState("email");
-          }}
-        />
-      )}
-      
-      {state === "email" && (
-        <EmailGateScreen
-          consentAnalysis={consentAnalysis}
-          consentPhoto={consentPhoto}
-          onSuccess={(newToken) => {
-            setToken(newToken);
+          onNext={(tToken) => {
+            setTurnstileToken(tToken);
             setState("processing");
           }}
-          onBack={() => setState("preview")}
         />
       )}
       
       {state === "processing" && (
         <ProcessingScreen
-          token={token!}
+          token={token || ""}
+          turnstileToken={turnstileToken}
           photoBlob={photoBlob!}
           onSuccess={handleAnalysisSuccess}
           onError={handleAnalysisError}

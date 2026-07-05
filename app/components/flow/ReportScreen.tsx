@@ -54,6 +54,10 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoneCoords, setZoneCoords] = useState<Record<string, {x: number, y: number, w: number, h: number}>>({});
 
+  const [showEmailDrawer, setShowEmailDrawer] = useState(false);
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     setShareSupported(!!navigator.share);
   }, []);
@@ -110,6 +114,21 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
       } catch (e) {
         console.log("Sharing cancelled or failed", e);
       }
+    }
+  };
+
+  const handleClaim = async () => {
+    if (!email) return;
+    setIsSubmitting(true);
+    try {
+      const { claimAnalysis } = await import("../../../lib/api-client");
+      await claimAnalysis(analysisResult.id, email, true, false); // Default consents for now
+      setShowEmailDrawer(false);
+      alert("Report successfully saved and emailed!");
+    } catch (e: any) {
+      alert(e.message || "Something went wrong.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -390,8 +409,12 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
 
         {/* Actions */}
         <div className="pt-4 space-y-3">
-          <Button onClick={onNewScan} variant="primary" className="w-full">
-            <RefreshCw size={18} />
+          <Button onClick={() => setShowEmailDrawer(true)} variant="primary" className="w-full bg-gray-900 text-white border-0 hover:bg-gray-800">
+            <Share2 size={18} className="mr-2" />
+            Save & Email Report
+          </Button>
+          <Button onClick={onNewScan} variant="outline" className="w-full border-gray-300 text-gray-700">
+            <RefreshCw size={18} className="mr-2" />
             New Scan
           </Button>
         </div>
@@ -438,6 +461,42 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
               />
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Email Drawer */}
+      <AnimatePresence>
+        {showEmailDrawer && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-[100]" 
+              onClick={() => setShowEmailDrawer(false)}
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white rounded-t-[32px] p-6 z-[101] shadow-2xl"
+            >
+              <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
+              <h2 className="text-2xl font-display font-medium text-gray-900 mb-2">Get Your Full Report</h2>
+              <p className="text-gray-600 text-sm mb-6">
+                Enter your email to save this analysis and get a beautiful copy sent to your inbox.
+              </p>
+              
+              <input 
+                type="email" 
+                placeholder="Your email address" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 mb-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
+              />
+              
+              <Button onClick={handleClaim} disabled={!email || isSubmitting} variant="primary" className="w-full bg-gray-900 text-white">
+                {isSubmitting ? "Saving..." : "Send it to me"}
+              </Button>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

@@ -2,15 +2,17 @@ import { useEffect, useState } from "react";
 import { Button } from "../ui/Button";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
+import { Turnstile } from '@marsidev/react-turnstile';
 
 interface Props {
   photoBlob: Blob | null;
   onRetake: () => void;
-  onNext: () => void;
+  onNext: (turnstileToken: string) => void;
 }
 
 export default function PreviewScreen({ photoBlob, onRetake, onNext }: Props) {
   const [url, setUrl] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   useEffect(() => {
     if (photoBlob) {
@@ -46,7 +48,13 @@ export default function PreviewScreen({ photoBlob, onRetake, onNext }: Props) {
         )}
         
         <div className="w-full space-y-3 pb-6 max-w-md">
-          <Button onClick={onNext} variant="primary">Use this photo</Button>
+          <div className="flex justify-center pb-2">
+            <Turnstile 
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!} 
+              onSuccess={(token) => setTurnstileToken(token)}
+            />
+          </div>
+          <Button onClick={() => onNext(turnstileToken || "dummy")} variant="primary">Use this photo</Button>
           <Button onClick={onRetake} variant="outline">Retake</Button>
         </div>
       </div>

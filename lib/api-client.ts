@@ -27,22 +27,19 @@ export async function loginWithEmail(
   return json.data;
 }
 
-export async function submitAnalysis(
-  token: string,
-  file: Blob,
-  ageRange?: string,
-  primaryConcern?: string
-): Promise<AnalysisOut> {
+export async function submitAnalysis(token: string | null, turnstileToken: string, photoBlob: Blob): Promise<AnalysisOut> {
   const formData = new FormData();
-  formData.append("file", file);
-  if (ageRange) formData.append("age_range", ageRange);
-  if (primaryConcern) formData.append("primary_concern", primaryConcern);
+  formData.append("file", photoBlob, "selfie.jpg");
+  formData.append("turnstile_token", turnstileToken);
+
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   const res = await fetch(`${API_BASE}/analyze/`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     body: formData,
   });
 
@@ -52,4 +49,20 @@ export async function submitAnalysis(
   }
 
   return json.data;
+}
+
+export async function claimAnalysis(jobId: string, email: string, consentAnalysis: boolean, consentPhoto: boolean): Promise<string> {
+  const formData = new FormData();
+  formData.append("job_id", jobId);
+  formData.append("email", email);
+  formData.append("consent_analysis", consentAnalysis.toString());
+  formData.append("consent_photo", consentPhoto.toString());
+
+  const res = await fetch(`${API_BASE}/analyze/claim`, {
+    method: "POST",
+    body: formData,
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error?.message || "Failed to claim report");
+  return json.data.access_token;
 }
