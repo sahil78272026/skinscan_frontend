@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from "react";
 import LandingScreen from "./components/flow/LandingScreen";
 import GuidedCaptureScreen from "./components/flow/GuidedCaptureScreen";
 import PreviewScreen from "./components/flow/PreviewScreen";
-import EmailGateScreen from "./components/flow/EmailGateScreen";
 import ProcessingScreen from "./components/flow/ProcessingScreen";
 import ReportScreen from "./components/flow/ReportScreen";
 import { AnalysisOut } from "../lib/types";
@@ -25,7 +24,6 @@ export default function Home() {
   const [consentAnalysis, setConsentAnalysis] = useState(false);
   const [consentPhoto, setConsentPhoto] = useState(false);
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [analysisResult, setAnalysisResult] = useState<AnalysisOut | null>(null);
   const [errorToast, setErrorToast] = useState<string | null>(null);
@@ -96,7 +94,7 @@ export default function Home() {
       
       {state === "processing" && (
         <ProcessingScreen
-          token={token || ""}
+          token={""}
           turnstileToken={turnstileToken}
           photoBlob={photoBlob!}
           onSuccess={handleAnalysisSuccess}

@@ -125,7 +125,8 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
       await claimAnalysis(analysisResult.id, email, true, false); // Default consents for now
       setShowEmailDrawer(false);
       alert("Report successfully saved and emailed!");
-    } catch (e: any) {
+    } catch (err: unknown) {
+      const e = err as Error;
       alert(e.message || "Something went wrong.");
     } finally {
       setIsSubmitting(false);
@@ -261,6 +262,7 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
                   >
                     <div className="w-full h-48 relative overflow-hidden bg-gray-900">
                       {photoUrl && coords ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img 
                           src={photoUrl} 
                           alt={zoneName}
