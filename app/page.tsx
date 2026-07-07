@@ -28,13 +28,6 @@ export default function Home() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisOut | null>(null);
   const [errorToast, setErrorToast] = useState<string | null>(null);
 
-  const resetFlow = () => {
-    setState("landing");
-    setConsentAnalysis(false);
-    setConsentPhoto(false);
-    setPhotoBlob(null);
-    setAnalysisResult(null);
-  };
 
   // Preload MediaPipe camera model silently in the background
   useEffect(() => {
