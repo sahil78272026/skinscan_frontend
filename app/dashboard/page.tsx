@@ -9,7 +9,6 @@ import Link from "next/link";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import ReportScreen from "../components/flow/ReportScreen";
-import { AnimatePresence } from "framer-motion";
 
 export default function Dashboard() {
   const [history, setHistory] = useState<AnalysisOut[]>([]);
@@ -90,7 +89,7 @@ export default function Dashboard() {
             </div>
             <h2 className="text-xl font-display font-medium text-gray-900 mb-2">No Scans Yet</h2>
             <p className="text-gray-500 text-sm mb-8 px-4 leading-relaxed">
-              You haven't saved any skin analyses yet. Take your first scan to unlock your personalized dashboard and track your skin's progress over time!
+              You haven&apos;t saved any skin analyses yet. Take your first scan to unlock your personalized dashboard and track your skin&apos;s progress over time!
             </p>
             <Link href="/">
               <Button variant="primary" className="bg-gray-900 text-white rounded-full px-8 py-3.5 shadow-lg shadow-gray-900/20">

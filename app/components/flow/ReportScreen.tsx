@@ -79,16 +79,16 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan, onC
     }
   }, [photoBlob, analysisResult.photo_url]);
 
-  const handlePointerMove = (e: React.PointerEvent | PointerEvent) => {
+  const handlePointerMove = useCallback((e: React.PointerEvent | PointerEvent | Event) => {
     if (!isDragging || !heroRef.current) return;
     const rect = heroRef.current.getBoundingClientRect();
-    let x = (e as React.PointerEvent).clientX ?? (e as any).touches?.[0]?.clientX;
-    if (x === undefined) x = (e as PointerEvent).clientX;
+    const pointerEvent = e as PointerEvent;
+    if (pointerEvent.clientX === undefined) return;
     
-    let position = ((x - rect.left) / rect.width) * 100;
+    let position = ((pointerEvent.clientX - rect.left) / rect.width) * 100;
     position = Math.max(0, Math.min(100, position));
     setSliderPosition(position);
-  };
+  }, [isDragging]);
   
   const handlePointerUp = () => setIsDragging(false);
 
@@ -104,7 +104,7 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan, onC
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [isDragging]);
+  }, [isDragging, handlePointerMove]);
 
   const handleImageLoad = async () => {
     if (!imgRef.current || !canvasRef.current) return;
