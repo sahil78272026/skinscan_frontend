@@ -11,7 +11,6 @@ import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 interface Props {
   analysisResult: AnalysisOut;
   photoBlob?: Blob;
-  photoBlob?: Blob;
   onClose?: () => void;
   isReadOnly?: boolean;
 }
