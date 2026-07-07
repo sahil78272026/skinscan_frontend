@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AnalysisOut, ZoneObservation } from "../../../lib/types";
 import { getFaceLandmarker } from "../../../lib/mediapipe/faceMesh";
 import { drawAnnotation } from "../../../lib/mediapipe/annotate";
-import { Sparkles, Download, Share2, RefreshCw, Sun, Moon, Droplets, Heart, X, ZoomIn, ShoppingBag, ExternalLink } from "lucide-react";
+import { Sparkles, Download, Share2, Sun, Moon, Droplets, Heart, X, ZoomIn, ShoppingBag, ExternalLink } from "lucide-react";
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 interface Props {
   analysisResult: AnalysisOut;
   photoBlob?: Blob;
-  onNewScan?: () => void;
+  photoBlob?: Blob;
   onClose?: () => void;
   isReadOnly?: boolean;
 }
@@ -47,7 +47,7 @@ const DUMMY_PRODUCTS = [
 
 // ZoneCard component removed, replaced by inline Carousel
 
-export default function ReportScreen({ analysisResult, photoBlob, onNewScan, onClose, isReadOnly }: Props) {
+export default function ReportScreen({ analysisResult, photoBlob, onClose, isReadOnly }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [photoUrl, setPhotoUrl] = useState<string>("");
