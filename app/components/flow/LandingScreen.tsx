@@ -2,6 +2,8 @@ import { Button } from "../ui/Button";
 import { Checkbox } from "../ui/Checkbox";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { Activity } from "lucide-react";
 
 interface Props {
   consentAnalysis: boolean;
@@ -16,14 +18,29 @@ export default function LandingScreen({
   consentPhoto, setConsentPhoto, 
   onNext 
 }: Props) {
+  const [hasToken, setHasToken] = useState(false);
+
+  useEffect(() => {
+    setHasToken(!!localStorage.getItem("auth_token"));
+  }, []);
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="flex flex-col items-center justify-center min-h-screen p-6 max-w-md mx-auto w-full"
+      className="flex flex-col items-center justify-center min-h-screen p-6 max-w-md mx-auto w-full relative"
     >
-      <div className="flex-1 flex flex-col justify-center items-center w-full">
+      {hasToken && (
+        <div className="absolute top-6 right-6">
+          <Link href="/dashboard" className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider bg-white px-3 py-2 rounded-full shadow-sm border border-gray-100 hover:text-gray-900 transition-colors">
+            <Activity size={14} className="text-terracotta-500" />
+            My Scans
+          </Link>
+        </div>
+      )}
+      
+      <div className="flex-1 flex flex-col justify-center items-center w-full mt-12">
         <h1 className="font-display text-5xl text-gray-900 mb-2 text-center tracking-tight">Skin<span className="text-terracotta-600 italic">Scan</span></h1>
         <p className="text-gray-600 text-center mb-10 text-lg">Your personalized cosmetic skin analysis, powered by AI.</p>
         

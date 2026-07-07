@@ -94,9 +94,10 @@ export default function Home() {
       
       {state === "processing" && (
         <ProcessingScreen
-          token={""}
+          token={typeof window !== "undefined" ? localStorage.getItem("auth_token") || "" : ""}
           turnstileToken={turnstileToken}
           photoBlob={photoBlob!}
+          consentPhoto={consentPhoto}
           onSuccess={handleAnalysisSuccess}
           onError={handleAnalysisError}
         />

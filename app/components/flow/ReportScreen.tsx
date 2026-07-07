@@ -10,8 +10,10 @@ import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 interface Props {
   analysisResult: AnalysisOut;
-  photoBlob: Blob;
-  onNewScan: () => void;
+  photoBlob?: Blob;
+  onNewScan?: () => void;
+  onClose?: () => void;
+  isReadOnly?: boolean;
 }
 
 const ZONE_LABELS: Record<string, string> = {
@@ -45,7 +47,7 @@ const DUMMY_PRODUCTS = [
 
 // ZoneCard component removed, replaced by inline Carousel
 
-export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: Props) {
+export default function ReportScreen({ analysisResult, photoBlob, onNewScan, onClose, isReadOnly }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [photoUrl, setPhotoUrl] = useState<string>("");
@@ -54,6 +56,10 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoneCoords, setZoneCoords] = useState<Record<string, {x: number, y: number, w: number, h: number}>>({});
+  
+  const [sliderPosition, setSliderPosition] = useState(50);
+  const [isDragging, setIsDragging] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
 
   const [showEmailDrawer, setShowEmailDrawer] = useState(false);
   const [email, setEmail] = useState("");
@@ -64,10 +70,41 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
   }, []);
 
   useEffect(() => {
-    const u = URL.createObjectURL(photoBlob);
-    setPhotoUrl(u);
-    return () => URL.revokeObjectURL(u);
-  }, [photoBlob]);
+    if (photoBlob) {
+      const u = URL.createObjectURL(photoBlob);
+      setPhotoUrl(u);
+      return () => URL.revokeObjectURL(u);
+    } else if (analysisResult.photo_url) {
+      setPhotoUrl(analysisResult.photo_url);
+    }
+  }, [photoBlob, analysisResult.photo_url]);
+
+  const handlePointerMove = (e: React.PointerEvent | PointerEvent) => {
+    if (!isDragging || !heroRef.current) return;
+    const rect = heroRef.current.getBoundingClientRect();
+    let x = (e as React.PointerEvent).clientX ?? (e as any).touches?.[0]?.clientX;
+    if (x === undefined) x = (e as PointerEvent).clientX;
+    
+    let position = ((x - rect.left) / rect.width) * 100;
+    position = Math.max(0, Math.min(100, position));
+    setSliderPosition(position);
+  };
+  
+  const handlePointerUp = () => setIsDragging(false);
+
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
+    } else {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    }
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [isDragging]);
 
   const handleImageLoad = async () => {
     if (!imgRef.current || !canvasRef.current) return;
@@ -123,9 +160,25 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
     setIsSubmitting(true);
     try {
       const { claimAnalysis } = await import("../../../lib/api-client");
-      await claimAnalysis(analysisResult.id, email, true, false); // Default consents for now
+      const token = await claimAnalysis(analysisResult.id, email, true, false); // Default consents for now
+      localStorage.setItem("auth_token", token);
       setShowEmailDrawer(false);
-      alert("Report successfully saved and emailed!");
+      window.location.href = "/dashboard";
+    } catch (err: unknown) {
+      const e = err as Error;
+      alert(e.message || "Something went wrong.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    setIsSubmitting(true);
+    try {
+      const { emailAnalysis } = await import("../../../lib/api-client");
+      const token = localStorage.getItem("auth_token") || "";
+      await emailAnalysis(analysisResult.id, token);
+      alert("Email sent successfully!");
     } catch (err: unknown) {
       const e = err as Error;
       alert(e.message || "Something went wrong.");
@@ -168,23 +221,75 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Hero Header */}
-      <div className="relative w-full h-[50vh] bg-gray-900 rounded-b-3xl overflow-hidden shadow-lg">
+      <div className="relative w-full h-[50vh] bg-gray-900 rounded-b-3xl overflow-hidden shadow-lg touch-none select-none">
         {annotatedUrl ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full h-full relative group">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full h-full relative group" ref={heroRef}>
+            {/* Raw Image (Background) */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
-              src={annotatedUrl} 
-              alt="Annotated selfie" 
-              className="w-full h-full object-cover object-center cursor-zoom-in" 
+              src={photoUrl} 
+              alt="Raw selfie" 
+              draggable={false}
+              className="absolute inset-0 w-full h-full object-cover object-center cursor-zoom-in pointer-events-none"
               onClick={() => setIsFullscreen(true)}
             />
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="bg-black/50 text-white px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-sm">
+            
+            {/* Annotated Image (Foreground, clipped by slider) */}
+            <div 
+              className="absolute inset-0 overflow-hidden pointer-events-none" 
+              style={{ width: `${sliderPosition}%` }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={annotatedUrl} 
+                alt="Annotated selfie" 
+                draggable={false}
+                className="absolute inset-0 w-full h-full object-cover object-center max-w-none"
+                style={{ width: '100vw', maxWidth: '448px' }} // 448px is max-w-md
+              />
+            </div>
+
+            {/* Fullscreen Click Target */}
+            <div 
+              className="absolute inset-0 z-0 cursor-zoom-in"
+              onClick={() => setIsFullscreen(true)}
+            />
+
+            {/* Slider Handle */}
+            <div 
+              className="absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize flex items-center justify-center shadow-lg z-20 touch-none"
+              style={{ left: `calc(${sliderPosition}% - 2px)` }}
+              onPointerDown={(e) => {
+                setIsDragging(true);
+                // Prevent capturing clicks to the fullscreen overlay
+                e.stopPropagation();
+              }}
+            >
+              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md -ml-3.5">
+                <div className="flex gap-1">
+                  <div className="w-0.5 h-3 bg-gray-300 rounded-full"></div>
+                  <div className="w-0.5 h-3 bg-gray-300 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute top-4 left-0 right-0 flex justify-between px-6 pointer-events-none z-10">
+               <span className="bg-black/50 text-white text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded backdrop-blur-sm opacity-80">AI Analysis</span>
+               <span className="bg-black/50 text-white text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded backdrop-blur-sm opacity-80">Original</span>
+            </div>
+
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              <div className="bg-black/50 text-white px-4 py-2 mt-32 rounded-full flex items-center gap-2 backdrop-blur-sm">
                 <ZoomIn size={18} />
                 <span className="text-sm font-medium">Tap to zoom</span>
               </div>
             </div>
           </motion.div>
+        ) : !photoBlob ? (
+          <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3 bg-gradient-to-br from-peach-900 to-gray-900">
+            <Sparkles size={32} className="text-gold-400 opacity-50" />
+            <span className="text-sm text-white/60">Photo not saved</span>
+          </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3">
             <div className="w-8 h-8 border-2 border-white/30 border-t-gold-400 rounded-full animate-spin" />
@@ -207,7 +312,15 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
           </p>
         </motion.div>
         
-        <div className="absolute top-4 right-4 flex gap-2">
+        {isReadOnly && onClose && (
+          <div className="absolute top-16 left-4 z-30">
+            <button onClick={onClose} className="w-10 h-10 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-black/60 active:scale-90 transition-all border border-white/10">
+              <X size={18} />
+            </button>
+          </div>
+        )}
+        
+        <div className="absolute top-16 right-4 flex gap-2 z-30">
           <button onClick={handleDownload} className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/30 active:scale-90 transition-all">
             <Download size={18} />
           </button>
@@ -275,7 +388,9 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
                           }}
                         />
                       ) : (
-                         <div className="w-full h-full flex items-center justify-center text-white/50 text-xs">Processing...</div>
+                         <div className="w-full h-full flex items-center justify-center text-white/50 text-xs bg-gray-800">
+                           {!(photoBlob || analysisResult.photo_url) ? "No image" : "Processing..."}
+                         </div>
                       )}
                       
                       <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
@@ -412,18 +527,37 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
         )}
 
         {/* Actions */}
-        <div className="pt-4 space-y-3">
-          <Button onClick={() => setShowEmailDrawer(true)} variant="primary" className="w-full bg-gray-900 text-white border-0 hover:bg-gray-800">
-            <Share2 size={18} className="mr-2" />
-            Save & Email Report
-          </Button>
-          <Button onClick={onNewScan} variant="outline" className="w-full border-gray-300 text-gray-700">
-            <RefreshCw size={18} className="mr-2" />
-            New Scan
-          </Button>
-        </div>
+        {!isReadOnly && (
+          <div className="pt-4 space-y-3">
+            {analysisResult.user_id ? (
+              <Button onClick={handleSendEmail} disabled={isSubmitting} variant="primary" className="w-full bg-gray-900 text-white border-0 hover:bg-gray-800">
+                <Share2 size={18} className="mr-2" />
+                {isSubmitting ? "Sending..." : "Email Me This Report"}
+              </Button>
+            ) : (
+              <Button onClick={() => setShowEmailDrawer(true)} variant="primary" className="w-full bg-gray-900 text-white border-0 hover:bg-gray-800">
+                <Share2 size={18} className="mr-2" />
+                Save & Email Report
+              </Button>
+            )}
+            
+            {/* Go to Dashboard Button (if logged in and on main flow) */}
+            {analysisResult.user_id && (
+              <Button onClick={() => window.location.href = '/dashboard'} variant="outline" className="w-full bg-white text-gray-900 border-gray-200 hover:bg-gray-50">
+                Go to Dashboard
+              </Button>
+            )}
+
+            {onNewScan && (
+              <Button onClick={onNewScan} variant="outline" className="w-full border-gray-300 text-gray-700">
+                <RefreshCw size={18} className="mr-2" />
+                New Scan
+              </Button>
+            )}
+          </div>
+        )}
         
-        <p className="text-center text-xs text-gray-400 pb-6">
+        <p className="text-center text-xs text-gray-400 pb-6 mt-4">
           Cosmetic analysis only. Not medical advice.
         </p>
       </div>
@@ -495,9 +629,10 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
                       setIsSubmitting(true);
                       try {
                         const { claimAnalysisGoogle } = await import("../../../lib/api-client");
-                        await claimAnalysisGoogle(analysisResult.id, credentialResponse.credential, true, false);
+                        const token = await claimAnalysisGoogle(analysisResult.id, credentialResponse.credential, true, false);
+                        localStorage.setItem("auth_token", token);
                         setShowEmailDrawer(false);
-                        alert("Report successfully saved and emailed via Google!");
+                        window.location.href = "/dashboard";
                       } catch (err: unknown) {
                         const e = err as Error;
                         alert(e.message || "Something went wrong.");

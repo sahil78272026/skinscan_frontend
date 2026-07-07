@@ -47,4 +47,6 @@ export interface AnalysisOut {
   result_json: AnalysisResult;
   top_concerns: string[];
   photo_object_key?: string;
+  photo_url?: string;
+  user_id?: string;
 }

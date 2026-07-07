@@ -27,10 +27,11 @@ export async function loginWithEmail(
   return json.data;
 }
 
-export async function submitAnalysis(token: string | null, turnstileToken: string, photoBlob: Blob): Promise<AnalysisOut> {
+export async function submitAnalysis(token: string | null, turnstileToken: string, photoBlob: Blob, consentPhoto: boolean): Promise<AnalysisOut> {
   const formData = new FormData();
   formData.append("file", photoBlob, "selfie.jpg");
   formData.append("turnstile_token", turnstileToken);
+  formData.append("consent_photo", consentPhoto.toString());
 
   const headers: Record<string, string> = {};
   if (token) {
@@ -81,4 +82,28 @@ export async function claimAnalysisGoogle(jobId: string, credential: string, con
   const json = await res.json();
   if (!json.success) throw new Error(json.error?.message || "Failed to claim report via Google");
   return json.data.access_token;
+}
+
+export async function getAnalysisHistory(token: string): Promise<AnalysisOut[]> {
+  const res = await fetch(`${API_BASE}/analyze/history`, {
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
+  });
+  const json: Envelope<AnalysisOut[]> = await res.json();
+  if (!json.success || !json.data) {
+    throw new Error(json.error?.message || "Failed to load history");
+  }
+  return json.data;
+}
+
+export async function emailAnalysis(jobId: string, token: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/analyze/${jobId}/email`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error?.message || "Failed to email report");
 }

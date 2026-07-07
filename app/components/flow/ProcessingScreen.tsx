@@ -11,6 +11,7 @@ interface Props {
   token: string;
   turnstileToken: string;
   photoBlob: Blob;
+  consentPhoto: boolean;
   onSuccess: (result: AnalysisOut) => void;
   onError: (msg: string) => void;
 }
@@ -33,7 +34,7 @@ const TIPS = [
   "Tip: Don't forget to extend your skincare down to your neck and chest!"
 ];
 
-export default function ProcessingScreen({ token, turnstileToken, photoBlob, onSuccess, onError }: Props) {
+export default function ProcessingScreen({ token, turnstileToken, photoBlob, consentPhoto, onSuccess, onError }: Props) {
   const [stepIdx, setStepIdx] = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
 
@@ -73,7 +74,7 @@ export default function ProcessingScreen({ token, turnstileToken, photoBlob, onS
     if (hasFired.current) return;
     hasFired.current = true;
     
-    submitAnalysis(token, turnstileToken, photoBlob)
+    submitAnalysis(token, turnstileToken, photoBlob, consentPhoto)
       .then(res => {
         onSuccess(res);
       })
@@ -81,7 +82,7 @@ export default function ProcessingScreen({ token, turnstileToken, photoBlob, onS
         onError(err.message);
         hasFired.current = false; // allow retry on error if needed
       });
-  }, [token, turnstileToken, photoBlob, onSuccess, onError]);
+  }, [token, turnstileToken, photoBlob, consentPhoto, onSuccess, onError]);
 
   return (
     <div className="flex flex-col h-screen w-full bg-gray-900 justify-center items-center overflow-hidden relative">
