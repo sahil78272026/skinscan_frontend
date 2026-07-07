@@ -66,3 +66,19 @@ export async function claimAnalysis(jobId: string, email: string, consentAnalysi
   if (!json.success) throw new Error(json.error?.message || "Failed to claim report");
   return json.data.access_token;
 }
+
+export async function claimAnalysisGoogle(jobId: string, credential: string, consentAnalysis: boolean, consentPhoto: boolean): Promise<string> {
+  const formData = new FormData();
+  formData.append("job_id", jobId);
+  formData.append("credential", credential);
+  formData.append("consent_analysis", consentAnalysis.toString());
+  formData.append("consent_photo", consentPhoto.toString());
+
+  const res = await fetch(`${API_BASE}/analyze/claim/google`, {
+    method: "POST",
+    body: formData,
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error?.message || "Failed to claim report via Google");
+  return json.data.access_token;
+}

@@ -6,6 +6,7 @@ import { AnalysisOut, ZoneObservation } from "../../../lib/types";
 import { getFaceLandmarker } from "../../../lib/mediapipe/faceMesh";
 import { drawAnnotation } from "../../../lib/mediapipe/annotate";
 import { Sparkles, Download, Share2, RefreshCw, Sun, Moon, Droplets, Heart, X, ZoomIn, ShoppingBag, ExternalLink } from "lucide-react";
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 interface Props {
   analysisResult: AnalysisOut;
@@ -159,6 +160,7 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
   })();
 
   return (
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID!}>
     <div className="w-full min-h-screen bg-peach-50 max-w-md mx-auto pb-24">
       {/* Hidden elements for MediaPipe processing */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -483,10 +485,42 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
               <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
               <h2 className="text-2xl font-display font-medium text-gray-900 mb-2">Get Your Full Report</h2>
               <p className="text-gray-600 text-sm mb-6">
-                Enter your email to save this analysis and get a beautiful copy sent to your inbox.
+                Save this analysis to track your progress and get a beautiful copy sent to your inbox.
               </p>
               
-              <input 
+              <div className="w-full flex justify-center mb-4">
+                <GoogleLogin
+                  onSuccess={async (credentialResponse) => {
+                    if (credentialResponse.credential) {
+                      setIsSubmitting(true);
+                      try {
+                        const { claimAnalysisGoogle } = await import("../../../lib/api-client");
+                        await claimAnalysisGoogle(analysisResult.id, credentialResponse.credential, true, false);
+                        setShowEmailDrawer(false);
+                        alert("Report successfully saved and emailed via Google!");
+                      } catch (err: unknown) {
+                        const e = err as Error;
+                        alert(e.message || "Something went wrong.");
+                      } finally {
+                        setIsSubmitting(false);
+                      }
+                    }
+                  }}
+                  onError={() => alert("Google Login Failed")}
+                  theme="outline"
+                  shape="rectangular"
+                  width="360"
+                  text="continue_with"
+                />
+              </div>
+
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex-1 h-px bg-gray-200"></div>
+                <span className="text-xs text-gray-400 uppercase font-medium">Or use email</span>
+                <div className="flex-1 h-px bg-gray-200"></div>
+              </div>
+              
+              <input  
                 type="email" 
                 placeholder="Your email address" 
                 value={email}
@@ -502,5 +536,6 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan }: P
         )}
       </AnimatePresence>
     </div>
+    </GoogleOAuthProvider>
   );
 }

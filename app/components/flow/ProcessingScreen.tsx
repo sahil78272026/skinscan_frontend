@@ -5,6 +5,7 @@ import { submitAnalysis } from "../../../lib/api-client";
 import { useVisibility } from "../../hooks/useVisibility";
 import { AnalysisOut } from "../../../lib/types";
 import { Sparkles, Wand2, Star, Heart } from "lucide-react";
+import AIOrb from "../visuals/AIOrb";
 
 interface Props {
   token: string;
@@ -84,8 +85,9 @@ export default function ProcessingScreen({ token, turnstileToken, photoBlob, onS
 
   return (
     <div className="flex flex-col h-screen w-full bg-gray-900 justify-center items-center overflow-hidden relative">
-      {/* Background magical glow */}
-      <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+      {/* Background magical glow and 3D Orb */}
+      <AIOrb />
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
         <motion.div 
           animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.3, 0.1] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
