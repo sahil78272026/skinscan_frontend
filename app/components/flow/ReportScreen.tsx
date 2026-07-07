@@ -548,12 +548,7 @@ export default function ReportScreen({ analysisResult, photoBlob, onNewScan, onC
               </Button>
             )}
 
-            {onNewScan && (
-              <Button onClick={onNewScan} variant="outline" className="w-full border-gray-300 text-gray-700">
-                <RefreshCw size={18} className="mr-2" />
-                New Scan
-              </Button>
-            )}
+            {/* Removed New Scan button per user request */}
           </div>
         )}
         
