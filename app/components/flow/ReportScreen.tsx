@@ -292,9 +292,45 @@ export default function ReportScreen({ analysisResult, photoBlob, onClose, isRea
             </div>
           </motion.div>
         ) : !photoBlob ? (
-          <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3 bg-gradient-to-br from-peach-900 to-gray-900">
-            <Sparkles size={32} className="text-gold-400 opacity-50" />
-            <span className="text-sm text-white/60">Photo not saved</span>
+          <div className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-b from-gray-800 to-gray-900">
+            {/* Glowing background orbs */}
+            <motion.div 
+              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute w-64 h-64 bg-gold-500/20 rounded-full blur-[80px]"
+            />
+            <motion.div 
+              animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              className="absolute w-48 h-48 bg-peach-500/20 rounded-full blur-[60px] top-10"
+            />
+            
+            {/* Floating Mannequin Vector */}
+            <motion.div
+              animate={{ y: [-10, 10, -10], rotate: [-1, 1, -1] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              className="relative z-10 flex flex-col items-center"
+            >
+              <svg viewBox="0 0 200 240" className="w-40 h-48 opacity-40 drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]">
+                <path 
+                  d="M100 15 C140 15 170 50 170 110 C170 170 130 210 100 225 C70 210 30 170 30 110 C30 50 60 15 100 15 Z" 
+                  fill="none" 
+                  stroke="#F4D06F" 
+                  strokeWidth="2.5" 
+                  className="drop-shadow-lg"
+                />
+                {/* Minimalist features */}
+                <path d="M70 105 Q 80 100 90 105" fill="none" stroke="#F4D06F" strokeWidth="2" strokeLinecap="round" />
+                <path d="M110 105 Q 120 100 130 105" fill="none" stroke="#F4D06F" strokeWidth="2" strokeLinecap="round" />
+                <path d="M100 125 L 100 150" fill="none" stroke="#F4D06F" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M85 180 Q 100 185 115 180" fill="none" stroke="#F4D06F" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              
+              <div className="mt-4 flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20">
+                <Sparkles size={14} className="text-gold-300" />
+                <span className="text-[11px] uppercase tracking-widest font-bold text-white/80">Private Scan</span>
+              </div>
+            </motion.div>
           </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-white gap-3">
