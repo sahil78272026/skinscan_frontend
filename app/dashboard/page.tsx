@@ -101,9 +101,10 @@ export default function Dashboard() {
 
         <div className="space-y-4">
           {history.map((scan, idx) => {
-            const date = new Date(scan.created_at).toLocaleDateString("en-US", {
-              month: "short", day: "numeric", year: "numeric"
-            });
+            const dateObj = new Date(scan.created_at);
+            const dateStr = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+            const timeStr = dateObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+            const displayDate = `${dateStr} at ${timeStr}`;
             const concernsCount = scan.result_json?.top_concerns?.length || 0;
             const skinType = scan.result_json?.skin_type || scan.skin_type || "Analysis";
             
@@ -119,7 +120,7 @@ export default function Dashboard() {
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-2 text-gray-500 text-xs font-medium bg-gray-50 px-3 py-1.5 rounded-full">
                       <Clock size={12} />
-                      {date}
+                      {displayDate}
                     </div>
                     {idx === 0 && (
                       <span className="text-[10px] uppercase tracking-wider font-bold text-terracotta-600 bg-terracotta-50 px-2.5 py-1 rounded-full">

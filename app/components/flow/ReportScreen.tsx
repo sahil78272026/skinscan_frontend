@@ -13,6 +13,7 @@ interface Props {
   photoBlob?: Blob;
   onClose?: () => void;
   isReadOnly?: boolean;
+  consentPhoto?: boolean;
 }
 
 const ZONE_LABELS: Record<string, string> = {
@@ -46,7 +47,7 @@ const DUMMY_PRODUCTS = [
 
 // ZoneCard component removed, replaced by inline Carousel
 
-export default function ReportScreen({ analysisResult, photoBlob, onClose, isReadOnly }: Props) {
+export default function ReportScreen({ analysisResult, photoBlob, onClose, isReadOnly, consentPhoto = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [photoUrl, setPhotoUrl] = useState<string>("");
@@ -158,9 +159,15 @@ export default function ReportScreen({ analysisResult, photoBlob, onClose, isRea
     if (!email) return;
     setIsSubmitting(true);
     try {
-      const { claimAnalysis } = await import("../../../lib/api-client");
-      const token = await claimAnalysis(analysisResult.id, email, true, false); // Default consents for now
-      localStorage.setItem("auth_token", token);
+      const { loginWithEmail, claimAnalysis } = await import("../../../lib/api-client");
+      // FAST AUTH: Get token instantly
+      const { access_token } = await loginWithEmail(email, "", true, consentPhoto);
+      localStorage.setItem("auth_token", access_token);
+      
+      // BACKGROUND: Fire and forget the report saving (it takes time due to DB + Email background tasks)
+      claimAnalysis(analysisResult.id, email, true, consentPhoto).catch(err => console.error("Background claim failed", err));
+      
+      // IMMEDIATE: Unblock UI
       setShowEmailDrawer(false);
       window.location.href = "/dashboard";
     } catch (err: unknown) {
@@ -622,9 +629,15 @@ export default function ReportScreen({ analysisResult, photoBlob, onClose, isRea
                     if (credentialResponse.credential) {
                       setIsSubmitting(true);
                       try {
-                        const { claimAnalysisGoogle } = await import("../../../lib/api-client");
-                        const token = await claimAnalysisGoogle(analysisResult.id, credentialResponse.credential, true, false);
-                        localStorage.setItem("auth_token", token);
+                        const { loginWithGoogle, claimAnalysisGoogle } = await import("../../../lib/api-client");
+                        // FAST AUTH: Get token instantly
+                        const { access_token } = await loginWithGoogle(credentialResponse.credential, true);
+                        localStorage.setItem("auth_token", access_token);
+                        
+                        // BACKGROUND: Fire and forget report saving
+                        claimAnalysisGoogle(analysisResult.id, credentialResponse.credential, true, consentPhoto).catch(console.error);
+                        
+                        // IMMEDIATE: Unblock UI
                         setShowEmailDrawer(false);
                         window.location.href = "/dashboard";
                       } catch (err: unknown) {

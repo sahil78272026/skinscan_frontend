@@ -100,6 +100,7 @@ export default function Home() {
         <ReportScreen
           analysisResult={analysisResult!}
           photoBlob={photoBlob!}
+          consentPhoto={consentPhoto}
         />
       )}
 

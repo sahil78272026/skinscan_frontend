@@ -1,5 +1,11 @@
 import { AnalysisOut, Envelope } from "./types";
 
+interface UserProfile {
+  email: string;
+  display_name?: string;
+  consent_analysis: boolean;
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
 
 export async function loginWithEmail(
@@ -22,6 +28,27 @@ export async function loginWithEmail(
   const json: Envelope<{ access_token: string }> = await res.json();
   if (!json.success || !json.data) {
     throw new Error(json.error?.message || "Login failed");
+  }
+
+  return json.data;
+}
+
+export async function loginWithGoogle(
+  credential: string,
+  consentAnalysis: boolean
+): Promise<{ access_token: string }> {
+  const formData = new FormData();
+  formData.append("credential", credential);
+  formData.append("consent_analysis", consentAnalysis.toString());
+
+  const res = await fetch(`${API_BASE}/auth/google`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const json: Envelope<{ access_token: string }> = await res.json();
+  if (!json.success || !json.data) {
+    throw new Error(json.error?.message || "Google Login failed");
   }
 
   return json.data;
@@ -107,3 +134,17 @@ export async function emailAnalysis(jobId: string, token: string): Promise<void>
   const json = await res.json();
   if (!json.success) throw new Error(json.error?.message || "Failed to email report");
 }
+
+export async function getUserProfile(token: string): Promise<UserProfile> {
+  const res = await fetch(`${API_BASE}/users/me`, {
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
+  });
+  const json: Envelope<UserProfile> = await res.json();
+  if (!json.success || !json.data) {
+    throw new Error(json.error?.message || "Failed to load user profile");
+  }
+  return json.data;
+}
+
