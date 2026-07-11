@@ -68,49 +68,57 @@ export function drawAnnotation(
         };
       }
 
-      if (observation.severity === "none") return;
-
-      // Draw subtle highlight
-      ctx.beginPath();
-      indices.forEach((index, i) => {
-        const pt = landmarks[index];
-        if (!pt) return;
-        if (i === 0) {
-          ctx.moveTo(pt.x * w, pt.y * h);
-        } else {
-          ctx.lineTo(pt.x * w, pt.y * h);
-        }
-      });
-      ctx.closePath();
-      
-      let fillColor = "rgba(255, 255, 255, 0.1)";
-      if (observation.severity === "severe") fillColor = "rgba(224, 122, 95, 0.25)"; // Terracotta
-      else if (observation.severity === "moderate") fillColor = "rgba(233, 184, 59, 0.25)"; // Gold
-      
-      ctx.fillStyle = fillColor;
-      ctx.fill();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      if (count > 0) {
-        let text = observation.observations[0]; 
-        // Truncate text if it's too long so it fits on mobile screens
-        if (text.length > 18) {
-          text = text.substring(0, 15) + "...";
-        }
+      // Highlight the zone delicately (Heatmap style instead of wireframe)
+      // Only draw the polygon if it's severe or moderate
+      if (observation.severity !== "none") {
+        ctx.beginPath();
+        indices.forEach((index, i) => {
+          const pt = landmarks[index];
+          if (!pt) return;
+          if (i === 0) {
+            ctx.moveTo(pt.x * w, pt.y * h);
+          } else {
+            ctx.lineTo(pt.x * w, pt.y * h);
+          }
+        });
+        ctx.closePath();
         
-        ctx.font = "bold 20px sans-serif";
+        let fillColor = "rgba(255, 255, 255, 0.05)";
+        if (observation.severity === "severe") fillColor = "rgba(224, 122, 95, 0.15)"; // Terracotta
+        else if (observation.severity === "moderate") fillColor = "rgba(233, 184, 59, 0.15)"; // Gold
+        
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        // Removed the harsh white stroke completely for a softer look
+      }
+
+      if (count > 0 && observation.severity !== "none") {
+        let text = observation.observations[0]; 
+        
+        // Premium Keyword Extraction
+        const lower = text.toLowerCase();
+        if (lower.includes("dark circle") || lower.includes("puffi")) text = "Dark Circles";
+        else if (lower.includes("pore")) text = "Pores";
+        else if (lower.includes("oil") || lower.includes("shine")) text = "Oily";
+        else if (lower.includes("acne") || lower.includes("breakout")) text = "Acne";
+        else if (lower.includes("dehydrat") || lower.includes("dry")) text = "Dryness";
+        else if (lower.includes("uneven") || lower.includes("tone") || lower.includes("dull")) text = "Uneven Tone";
+        else if (lower.includes("line") || lower.includes("wrinkle")) text = "Fine Lines";
+        else if (lower.includes("scar") || lower.includes("pigment")) text = "Pigmentation";
+        else if (lower.includes("sag") || lower.includes("elastic")) text = "Elasticity";
+        else text = text.split(" ").slice(0, 2).join(" ");
+        
+        ctx.font = "600 13px system-ui, -apple-system, sans-serif";
         const textWidth = ctx.measureText(text).width;
-        const paddingX = 14;
-        const boxHeight = 36;
-        const boxWidth = textWidth + (paddingX * 2);
+        const paddingX = 24; // Generous padding for pill
+        const boxHeight = 28; // Slimmer, elegant pill
+        const boxWidth = textWidth + paddingX;
         
         const isLeft = cx < w / 2;
-        const edgeMargin = 8;
+        const edgeMargin = 12;
         
         // Calculate target positions closer to the face
-        const offset = 50; // pixels away from the face feature
+        const offset = 60; // Push further out for clean spacing
         let targetX = isLeft ? cx - boxWidth - offset : cx + offset;
         
         // Keep within horizontal bounds
@@ -132,8 +140,8 @@ export function drawAnnotation(
         while (overlap && attempts < 10) {
           overlap = false;
           for (const boxY of sideBoxes) {
-            if (Math.abs(boxY - targetY) < boxHeight + 4) {
-              targetY = boxY + boxHeight + 4;
+            if (Math.abs(boxY - targetY) < boxHeight + 12) { // More breathing room
+              targetY = boxY + boxHeight + 12;
               overlap = true;
               break;
             }
@@ -149,40 +157,52 @@ export function drawAnnotation(
         sideBoxes.push(targetY);
         // ---------------------------
         
-        // Draw the dot on the face
-        ctx.beginPath();
-        ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
-        ctx.fillStyle = "rgba(255, 255, 255, 1)";
-        ctx.fill();
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.4)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        
-        // Draw callout line (HUD style with elbow)
-        const elbowX = isLeft ? targetX + boxWidth + 10 : targetX - 10;
-        
+        // 1. Draw elegant bezier curve pointer
+        const endX = isLeft ? targetX + boxWidth : targetX;
         ctx.beginPath();
         ctx.moveTo(cx, cy);
-        ctx.lineTo(elbowX, cy);
-        ctx.lineTo(isLeft ? targetX + boxWidth : targetX, targetY);
         
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-        ctx.lineWidth = 1.5;
+        // Control points for a sweeping S-curve
+        const cp1x = cx + (isLeft ? -40 : 40);
+        const cp1y = cy;
+        const cp2x = endX + (isLeft ? 40 : -40);
+        const cp2y = targetY;
+        
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endX, targetY);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.lineWidth = 1;
         ctx.stroke();
+
+        // 2. Draw glowing dot on the face
+        const severityColor = observation.severity === "severe" ? "#E07A5F" : "#E9B83B";
+        ctx.shadowColor = severityColor;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.shadowBlur = 0; // reset shadow so it doesn't affect everything else
         
-        // Draw label background box
+        // 3. Draw Dark Glassmorphism Pill Label
         const boxYOffset = targetY - (boxHeight / 2);
-        ctx.fillStyle = observation.severity === "severe" ? "rgba(192, 83, 58, 0.9)" : "rgba(217, 160, 27, 0.9)";
+        
+        // The background
+        ctx.fillStyle = "rgba(20, 20, 25, 0.85)"; 
+        ctx.strokeStyle = severityColor; // Colored thin border based on severity
+        ctx.lineWidth = 1;
         
         ctx.beginPath();
-        ctx.roundRect(targetX, boxYOffset, boxWidth, boxHeight, 4);
+        ctx.roundRect(targetX, boxYOffset, boxWidth, boxHeight, boxHeight / 2); // Pill shape
         ctx.fill();
+        ctx.stroke();
         
-        // Draw text
+        // 4. Draw crisp white text
         ctx.fillStyle = "#ffffff";
-        ctx.textAlign = "left";
+        ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(text, targetX + paddingX, targetY);
+        // +1 to y to perfectly optical-center standard fonts
+        ctx.fillText(text, targetX + (boxWidth / 2), targetY + 1);
+
       }
     });
   }
