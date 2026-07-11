@@ -2,8 +2,9 @@
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
-import { Activity, Info, X, Sparkles, AlertTriangle } from "lucide-react";
+import { Activity, Info, X, Sparkles, AlertTriangle, User } from "lucide-react";
 import { getUserProfile } from "../../../lib/api-client";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 interface Props {
   consentAnalysis: boolean;
@@ -128,6 +129,9 @@ export default function LandingScreen({
   const [isLoading, setIsLoading] = useState(true);
   const [shakeConsent, setShakeConsent] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -173,6 +177,38 @@ export default function LandingScreen({
     onNext();
   };
 
+  const handleLogin = async () => {
+    if (!loginEmail) return;
+    setIsLoggingIn(true);
+    try {
+      const { loginWithEmail } = await import("../../../lib/api-client");
+      const { access_token } = await loginWithEmail(loginEmail, "", true, false);
+      localStorage.setItem("auth_token", access_token);
+      window.location.href = "/dashboard";
+    } catch (err: unknown) {
+      const e = err as Error;
+      alert(e.message || "Login failed.");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleGoogleLoginSuccess = async (credentialResponse: any) => {
+    if (!credentialResponse.credential) return;
+    setIsLoggingIn(true);
+    try {
+      const { loginWithGoogle } = await import("../../../lib/api-client");
+      const { access_token } = await loginWithGoogle(credentialResponse.credential, true);
+      localStorage.setItem("auth_token", access_token);
+      window.location.href = "/dashboard";
+    } catch (err: unknown) {
+      const e = err as Error;
+      alert(e.message || "Google Login failed.");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -182,18 +218,29 @@ export default function LandingScreen({
   }
 
   return (
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID || ""}>
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       className="flex flex-col items-center justify-center min-h-screen p-6 max-w-md mx-auto w-full relative"
     >
-      {hasToken && (
+      {hasToken ? (
         <div className="absolute top-6 right-6 z-10">
           <Link href="/dashboard" className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-full shadow-sm border border-gray-200 hover:text-gray-900 hover:border-gold-300 transition-all">
             <Activity size={14} className="text-terracotta-500" />
             My Scans
           </Link>
+        </div>
+      ) : (
+        <div className="absolute top-6 right-6 z-10">
+          <button 
+            onClick={() => setShowLoginModal(true)} 
+            className="w-10 h-10 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-gray-500 hover:text-gray-900 hover:border-gold-300 border border-gray-200 shadow-sm transition-all"
+            aria-label="Login"
+          >
+            <User size={18} />
+          </button>
         </div>
       )}
       
@@ -323,7 +370,67 @@ export default function LandingScreen({
             </motion.div>
           </div>
         )}
+
+        {showLoginModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLoginModal(false)}
+              className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white/90 backdrop-blur-md border border-white/50 p-6 rounded-3xl shadow-2xl w-full max-w-sm"
+            >
+              <button onClick={() => setShowLoginModal(false)} className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-800 bg-gray-100 rounded-full transition-colors">
+                <X size={16} />
+              </button>
+              <h3 className="font-display text-xl font-bold text-gray-900 mb-2">Welcome Back</h3>
+              <p className="text-sm text-gray-500 mb-6">Enter your email to access your past scans.</p>
+              
+              <input 
+                type="email" 
+                placeholder="Email Address" 
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                className="w-full bg-white/50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400 transition-all mb-4"
+              />
+              <button 
+                onClick={handleLogin}
+                disabled={!loginEmail || isLoggingIn}
+                className="w-full bg-gray-900 text-white rounded-xl px-4 py-3 text-sm font-bold shadow-md hover:bg-gray-800 disabled:opacity-50 transition-all mb-4"
+              >
+                {isLoggingIn ? "Logging in..." : "Continue with Email"}
+              </button>
+              
+              <div className="relative flex items-center justify-center w-full mb-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative bg-white/90 px-3 text-xs text-gray-400 uppercase tracking-wider font-semibold">Or</div>
+              </div>
+              
+              <div className="w-full flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleLoginSuccess}
+                  onError={() => alert("Google Login Failed")}
+                  useOneTap={false}
+                  shape="rectangular"
+                  theme="outline"
+                  size="large"
+                  text="continue_with"
+                  width="100%"
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
     </motion.div>
+    </GoogleOAuthProvider>
   );
 }
