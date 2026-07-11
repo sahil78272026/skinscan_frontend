@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { Activity, Info, X, Sparkles, AlertTriangle, User } from "lucide-react";
 import { getUserProfile } from "../../../lib/api-client";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
 interface Props {
   consentAnalysis: boolean;
@@ -193,7 +193,7 @@ export default function LandingScreen({
     }
   };
 
-  const handleGoogleLoginSuccess = async (credentialResponse: any) => {
+  const handleGoogleLoginSuccess = async (credentialResponse: CredentialResponse) => {
     if (!credentialResponse.credential) return;
     setIsLoggingIn(true);
     try {
