@@ -52,6 +52,7 @@ export default function ReportScreen({ analysisResult, photoBlob, onClose, isRea
   const imgRef = useRef<HTMLImageElement>(null);
   const [photoUrl, setPhotoUrl] = useState<string>("");
   const [annotatedUrl, setAnnotatedUrl] = useState<string>("");
+  const [heatmapUrl, setHeatmapUrl] = useState<string>("");
   const [shareSupported, setShareSupported] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -117,8 +118,14 @@ export default function ReportScreen({ analysisResult, photoBlob, onClose, isRea
     try {
       const landmarker = await getFaceLandmarker();
       const result = landmarker.detect(img);
-      const coords = drawAnnotation(canvas, img, result, analysisResult.result_json);
+      
+      // Pass 1: Heatmaps only (for zoomed breakdowns)
+      const coords = drawAnnotation(canvas, img, result, analysisResult.result_json, false);
       setZoneCoords(coords);
+      setHeatmapUrl(canvas.toDataURL("image/jpeg", 0.9));
+      
+      // Pass 2: Full annotations with text (for main hero view)
+      drawAnnotation(canvas, img, result, analysisResult.result_json, true);
       setAnnotatedUrl(canvas.toDataURL("image/jpeg", 0.9));
     } catch (e) {
       console.error("Failed to annotate:", e);
@@ -345,13 +352,33 @@ export default function ReportScreen({ analysisResult, photoBlob, onClose, isRea
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="absolute bottom-0 left-0 right-0 p-6 text-white pointer-events-none"
+          className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none flex justify-between items-end"
         >
-          <h1 className="font-display text-3xl mb-1">Your Analysis</h1>
-          <p className="text-white/80 flex items-center gap-2">
-            <Sparkles size={16} className="text-gold-400" />
-            <span>{analysis.skin_type} · {analysis.skin_tone}</span>
-          </p>
+          <div className="text-white">
+            <h1 className="font-display text-3xl mb-1">Your Analysis</h1>
+            <p className="text-white/80 flex items-center gap-2">
+              <Sparkles size={16} className="text-gold-400" />
+              <span>{analysis.skin_type} · {analysis.skin_tone}</span>
+            </p>
+          </div>
+          
+          {analysisResult.overall_score !== undefined && (
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              <svg className="absolute inset-0 w-full h-full -rotate-90 drop-shadow-[0_0_10px_rgba(212,175,55,0.5)]">
+                <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="4" />
+                <circle 
+                  cx="32" cy="32" r="28" 
+                  fill="none" 
+                  stroke={analysisResult.overall_score >= 80 ? "#4ade80" : analysisResult.overall_score >= 50 ? "#F4D06F" : "#E07A5F"}
+                  strokeWidth="4" 
+                  strokeDasharray="176" 
+                  strokeDashoffset={176 - (176 * analysisResult.overall_score) / 100}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="text-white font-bold text-lg font-display">{analysisResult.overall_score}</div>
+            </div>
+          )}
         </motion.div>
         
         {isReadOnly && onClose && (
@@ -421,12 +448,13 @@ export default function ReportScreen({ analysisResult, photoBlob, onClose, isRea
                       {photoUrl && coords ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img 
-                          src={photoUrl} 
+                          src={heatmapUrl || photoUrl} 
                           alt={zoneName}
-                          className="absolute w-full h-full object-cover transition-transform duration-700 ease-out"
+                          className="absolute w-full h-full object-cover transition-all duration-700 ease-out"
                           style={{
+                            objectPosition: `${coords.x * 100}% ${coords.y * 100}%`,
                             transformOrigin: `${coords.x * 100}% ${coords.y * 100}%`,
-                            transform: `scale(${Math.max(2.5, Math.min(6, 0.8 / (coords.w || 0.3)))})`
+                            transform: `scale(${Math.max(1.8, Math.min(4, 0.8 / (coords.w || 0.3)))})`
                           }}
                         />
                       ) : (

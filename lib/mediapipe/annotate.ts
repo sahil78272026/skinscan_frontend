@@ -6,7 +6,8 @@ export function drawAnnotation(
   canvas: HTMLCanvasElement,
   image: HTMLImageElement | HTMLVideoElement,
   landmarkerResult: FaceLandmarkerResult,
-  analysis: AnalysisResult
+  analysis: AnalysisResult,
+  drawLabels: boolean = true
 ): Record<string, { x: number, y: number, w: number, h: number }> {
   const zoneCoords: Record<string, { x: number, y: number, w: number, h: number }> = {};
 
@@ -157,6 +158,18 @@ export function drawAnnotation(
         sideBoxes.push(targetY);
         // ---------------------------
         
+        // 2. Draw glowing dot on the face
+        const severityColor = observation.severity === "severe" ? "#E07A5F" : "#E9B83B";
+        ctx.shadowColor = severityColor;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.shadowBlur = 0; // reset shadow so it doesn't affect everything else
+
+        if (!drawLabels) return;
+
         // 1. Draw elegant bezier curve pointer
         const endX = isLeft ? targetX + boxWidth : targetX;
         ctx.beginPath();
@@ -172,16 +185,6 @@ export function drawAnnotation(
         ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
         ctx.lineWidth = 1;
         ctx.stroke();
-
-        // 2. Draw glowing dot on the face
-        const severityColor = observation.severity === "severe" ? "#E07A5F" : "#E9B83B";
-        ctx.shadowColor = severityColor;
-        ctx.shadowBlur = 12;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
-        ctx.fillStyle = "#ffffff";
-        ctx.fill();
-        ctx.shadowBlur = 0; // reset shadow so it doesn't affect everything else
         
         // 3. Draw Dark Glassmorphism Pill Label
         const boxYOffset = targetY - (boxHeight / 2);
