@@ -49,4 +49,5 @@ export interface AnalysisOut {
   photo_object_key?: string;
   photo_url?: string;
   user_id?: string;
+  overall_score?: number;
 }
