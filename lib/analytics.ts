@@ -19,7 +19,7 @@ const getSessionId = () => {
 export const trackEvent = (eventName: string, metadataPayload?: Record<string, unknown>) => {
   if (typeof window === "undefined") return;
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
   const token = localStorage.getItem("auth_token");
 
   const payload = {
