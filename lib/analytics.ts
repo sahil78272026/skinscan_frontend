@@ -19,7 +19,7 @@ const getSessionId = () => {
 export const trackEvent = (eventName: string, metadataPayload?: Record<string, unknown>) => {
   if (typeof window === "undefined") return;
 
-  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
   const token = localStorage.getItem("auth_token");
 
   const payload = {
@@ -42,9 +42,9 @@ export const trackEvent = (eventName: string, metadataPayload?: Record<string, u
   if (navigator.sendBeacon) {
     // sendBeacon requires FormData or Blob/String
     const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-    navigator.sendBeacon(`${API_URL}/api/v1/analytics/track`, blob);
+    navigator.sendBeacon(`${API_BASE}/analytics/track`, blob);
   } else {
-    fetch(`${API_URL}/api/v1/analytics/track`, {
+    fetch(`${API_BASE}/analytics/track`, {
       method: "POST",
       headers,
       body: JSON.stringify(payload),
