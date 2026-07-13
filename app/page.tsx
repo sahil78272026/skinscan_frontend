@@ -10,6 +10,7 @@ import { AnalysisOut } from "../lib/types";
 import { getFaceLandmarkerVideo } from "../lib/mediapipe/faceMesh";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertTriangle } from "lucide-react";
+import { trackEvent } from "../lib/analytics";
 
 export type FlowState = 
   | "landing" 
@@ -32,6 +33,9 @@ export default function Home() {
   // Preload MediaPipe camera model silently in the background
   useEffect(() => {
     getFaceLandmarkerVideo().catch(err => console.error("MediaPipe video preload failed:", err));
+    
+    // Initial land tracking
+    trackEvent("page_view_landing");
   }, []);
 
   const showError = useCallback((msg: string) => {
@@ -40,11 +44,13 @@ export default function Home() {
   }, []);
 
   const handleAnalysisError = useCallback((msg: string) => {
+    trackEvent("scan_failed", { error_message: msg });
     showError(msg);
     setState("preview");
   }, [showError]);
 
   const handleAnalysisSuccess = useCallback((result: AnalysisOut) => {
+    trackEvent("scan_completed", { score: result.overall_score });
     setAnalysisResult(result);
     setState("report");
   }, []);
@@ -57,13 +63,17 @@ export default function Home() {
           setConsentAnalysis={setConsentAnalysis}
           consentPhoto={consentPhoto}
           setConsentPhoto={setConsentPhoto}
-          onNext={() => setState("capture")}
+          onNext={() => {
+            trackEvent("camera_opened");
+            setState("capture");
+          }}
         />
       )}
       
       {state === "capture" && (
         <GuidedCaptureScreen 
           onCapture={(blob) => {
+            trackEvent("photo_captured");
             setPhotoBlob(blob);
             setState("preview");
           }}
@@ -79,6 +89,7 @@ export default function Home() {
             setState("capture");
           }}
           onNext={(tToken) => {
+            trackEvent("processing_started");
             setTurnstileToken(tToken);
             setState("processing");
           }}
