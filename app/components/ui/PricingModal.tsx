@@ -40,7 +40,8 @@ export default function PricingModal({ isOpen, onClose, message, onSuccess }: Pr
         name: "SkinScan AI",
         description: `SkinScan ${planId === "lifetime" ? "Lifetime" : "Yearly"} Premium`,
         order_id: orderData.order_id,
-        handler: async function (response: Record<string, string>) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        handler: async function (response: any) {
           try {
             await verifyPaymentOrder({
               razorpay_order_id: response.razorpay_order_id,
