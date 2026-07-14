@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAnalysisHistory } from "../../lib/api-client";
+import { getAnalysisHistory, getUserProfile } from "../../lib/api-client";
 import { AnalysisOut } from "../../lib/types";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, Droplets, LogOut, ArrowRight, Activity } from "lucide-react";
+import { ArrowLeft, Clock, Droplets, LogOut, ArrowRight, Activity, Sparkles, Crown } from "lucide-react";
 import Link from "next/link";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import ReportScreen from "../components/flow/ReportScreen";
 import ComparisonScreen from "../components/flow/ComparisonScreen";
+import PricingModal from "../components/ui/PricingModal";
 
 export default function Dashboard() {
   const [history, setHistory] = useState<AnalysisOut[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedScan, setSelectedScan] = useState<AnalysisOut | null>(null);
   
@@ -28,14 +31,18 @@ export default function Dashboard() {
       return;
     }
 
-    getAnalysisHistory(token)
-      .then((data) => {
-        setHistory(data);
+    Promise.all([
+      getAnalysisHistory(token),
+      getUserProfile(token)
+    ])
+      .then(([historyData, profileData]) => {
+        setHistory(historyData);
+        setUserProfile(profileData);
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
-        setError("Failed to load history.");
+        setError("Failed to load dashboard data.");
         setLoading(false);
       });
   }, []);
@@ -98,7 +105,7 @@ export default function Dashboard() {
           </Link>
           <div className="flex flex-col items-center">
             <h1 className="font-display text-xl font-bold text-gray-900">My Scans</h1>
-            {history.length > 1 && (
+            {history.length > 1 ? (
               <button 
                 onClick={() => {
                   setIsCompareMode(!isCompareMode);
@@ -108,12 +115,27 @@ export default function Dashboard() {
               >
                 {isCompareMode ? 'Cancel Compare' : 'Compare Mode'}
               </button>
-            )}
+            ) : history.length === 1 ? (
+              <span className="text-[10px] uppercase tracking-wider font-bold px-3 py-1 mt-1 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-sm flex items-center gap-1">
+                ✨ Do one more scan to compare
+              </span>
+            ) : null}
           </div>
-          <button onClick={handleLogout} className="text-gray-500 hover:text-red-500 bg-gray-50 p-2 rounded-full transition-colors flex items-center gap-1">
+          <div className="flex items-center gap-3">
+            {userProfile?.subscription_tier === "free" && (
+              <button 
+                onClick={() => setIsPricingOpen(true)}
+                className="flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-gold-400 to-peach-500 px-3 py-2 rounded-full shadow-md hover:shadow-lg transition-all"
+              >
+                <Crown size={14} />
+                Upgrade
+              </button>
+            )}
+            <button onClick={handleLogout} className="text-gray-500 hover:text-red-500 bg-gray-50 p-2 rounded-full transition-colors flex items-center gap-1">
             <span className="text-xs font-medium uppercase tracking-wider hidden sm:block">Logout</span>
             <LogOut size={18} />
-          </button>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -220,6 +242,12 @@ export default function Dashboard() {
           </Button>
         </motion.div>
       )}
+      
+      <PricingModal 
+        isOpen={isPricingOpen} 
+        onClose={() => setIsPricingOpen(false)} 
+        onSuccess={() => window.location.reload()}
+      />
     </main>
   );
 }

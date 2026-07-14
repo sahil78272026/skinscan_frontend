@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
-import { Activity, Info, X, Sparkles, AlertTriangle, User } from "lucide-react";
+import { Activity, Info, X, Sparkles, AlertTriangle, User, ImageOff } from "lucide-react";
 import { getUserProfile } from "../../../lib/api-client";
 import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
@@ -12,6 +12,7 @@ interface Props {
   consentPhoto: boolean;
   setConsentPhoto: (v: boolean) => void;
   onNext: () => void;
+  onUpgradeRequired: () => void;
 }
 
 const ConsentCard = ({
@@ -42,7 +43,7 @@ const ConsentCard = ({
     >
       {/* Required Badge */}
       {isMandatory && !checked && (
-        <div className="absolute -top-px -right-px">
+        <div className="absolute top-0 right-0">
           <div className="relative">
             <div className="absolute inset-0 animate-ping rounded-bl-xl rounded-tr-2xl bg-terracotta-400 opacity-20" />
             <div className="relative rounded-bl-xl rounded-tr-2xl bg-terracotta-500 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-sm">
@@ -54,7 +55,7 @@ const ConsentCard = ({
 
       <div className="flex items-center gap-4">
         {/* Animated Check Circle */}
-        <div className={`relative flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all duration-500 ${
+        <div className={`relative flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border-2 transition-all duration-500 ${
           checked 
             ? "border-gold-400 bg-gold-400" 
             : isMandatory 
@@ -120,18 +121,20 @@ const ConsentCard = ({
 export default function LandingScreen({ 
   consentAnalysis, setConsentAnalysis, 
   consentPhoto, setConsentPhoto, 
-  onNext 
+  onNext, onUpgradeRequired
 }: Props) {
   const [hasToken, setHasToken] = useState(false);
   const [isPreConsented, setIsPreConsented] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [showPhotoWarningModal, setShowPhotoWarningModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [shakeConsent, setShakeConsent] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -141,6 +144,7 @@ export default function LandingScreen({
     if (token) {
       getUserProfile(token)
         .then((user) => {
+          setUserProfile(user);
           if (user.consent_analysis) {
             setConsentAnalysis(true);
             setIsPreConsented(true);
@@ -170,6 +174,16 @@ export default function LandingScreen({
         setShowErrorToast(false);
       }, 4000);
       
+      return;
+    }
+    
+    if (userProfile && userProfile.subscription_tier === "free" && userProfile.scans_used >= 3) {
+      onUpgradeRequired();
+      return;
+    }
+    
+    if (!consentPhoto) {
+      setShowPhotoWarningModal(true);
       return;
     }
     
@@ -236,10 +250,11 @@ export default function LandingScreen({
         <div className="absolute top-6 right-6 z-10">
           <button 
             onClick={() => setShowLoginModal(true)} 
-            className="w-10 h-10 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-gray-500 hover:text-gray-900 hover:border-gold-300 border border-gray-200 shadow-sm transition-all"
+            className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-full shadow-sm border border-gray-200 hover:text-gray-900 hover:border-gold-300 transition-all"
             aria-label="Login"
           >
-            <User size={18} />
+            <User size={14} className="text-gray-400" />
+            Sign In / Sign Up
           </button>
         </div>
       )}
@@ -277,6 +292,21 @@ export default function LandingScreen({
             onInfoClick={() => setShowPhotoModal(true)}
           />
         </div>
+
+        {/* Scan Status Indicator */}
+        {userProfile && (
+          <div className="mb-6 flex items-center justify-center gap-2 text-sm font-medium">
+            {userProfile.subscription_tier !== "free" ? (
+              <span className="bg-gradient-to-r from-gold-400 to-peach-500 bg-clip-text text-transparent flex items-center gap-1">
+                <Sparkles size={14} className="text-gold-400" /> Premium Active: Unlimited Scans
+              </span>
+            ) : (
+              <span className="text-gray-500">
+                {Math.max(0, 3 - userProfile.scans_used)} of 3 free scans remaining
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Glittering Round Button */}
         <motion.button 
@@ -425,6 +455,66 @@ export default function LandingScreen({
                   text="continue_with"
                   width="100%"
                 />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Photo Warning Modal */}
+      <AnimatePresence>
+        {showPhotoWarningModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPhotoWarningModal(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative bg-white rounded-[32px] shadow-2xl max-w-sm w-full border border-gray-100 overflow-hidden"
+            >
+              <div className="bg-gradient-to-b from-orange-50 to-white pt-8 pb-4 px-6 flex flex-col items-center text-center">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-orange-200 rounded-full blur-xl opacity-60 animate-pulse"></div>
+                  <div className="relative w-16 h-16 bg-gradient-to-tr from-orange-400 to-amber-300 rounded-2xl rotate-3 shadow-lg flex items-center justify-center text-white">
+                    <ImageOff size={28} className="-rotate-3" />
+                  </div>
+                </div>
+                <h3 className="font-display text-2xl font-bold text-gray-900 mb-2">Wait, are you sure?</h3>
+                <p className="text-gray-500 text-sm leading-relaxed px-2">
+                  You'll not be able to see the image of this analysis later if you do not store it.
+                </p>
+              </div>
+              
+              <div className="px-6 pb-6 pt-2 space-y-3">
+                <button 
+                  onClick={() => {
+                    setConsentPhoto(true);
+                    setShowPhotoWarningModal(false);
+                    onNext();
+                  }}
+                  className="w-full relative overflow-hidden group bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-2xl px-4 py-4 text-sm font-bold shadow-xl shadow-gray-900/20 hover:shadow-gray-900/30 transition-all active:scale-[0.98]"
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    <Sparkles size={16} className="text-gold-300" />
+                    Continue and Save Image
+                  </span>
+                  <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 rounded-2xl"></div>
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowPhotoWarningModal(false);
+                    onNext();
+                  }}
+                  className="w-full bg-white border border-gray-200 text-gray-500 rounded-2xl px-4 py-3.5 text-sm font-bold hover:bg-gray-50 hover:text-gray-900 transition-all active:scale-[0.98]"
+                >
+                  Continue without Saving
+                </button>
               </div>
             </motion.div>
           </div>

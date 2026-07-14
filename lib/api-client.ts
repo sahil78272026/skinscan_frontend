@@ -4,6 +4,8 @@ interface UserProfile {
   email: string;
   display_name?: string;
   consent_analysis: boolean;
+  subscription_tier: string;
+  scans_used: number;
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
@@ -148,3 +150,36 @@ export async function getUserProfile(token: string): Promise<UserProfile> {
   return json.data;
 }
 
+export async function createPaymentOrder(planId: string): Promise<{ order_id: string; amount: number; currency: string; key_id: string }> {
+  const token = localStorage.getItem("auth_token");
+  const res = await fetch(`${API_BASE}/payment/create-order`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ plan_id: planId })
+  });
+  const json = await res.json();
+  if (!json.success || !json.data) {
+    throw new Error(json.error?.message || "Failed to create payment order");
+  }
+  return json.data;
+}
+
+export async function verifyPaymentOrder(data: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string; plan_id: string }): Promise<boolean> {
+  const token = localStorage.getItem("auth_token");
+  const res = await fetch(`${API_BASE}/payment/verify-payment`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  if (!json.success) {
+    throw new Error(json.error?.message || "Failed to verify payment");
+  }
+  return json.data;
+}

@@ -6,6 +6,7 @@ import GuidedCaptureScreen from "./components/flow/GuidedCaptureScreen";
 import PreviewScreen from "./components/flow/PreviewScreen";
 import ProcessingScreen from "./components/flow/ProcessingScreen";
 import ReportScreen from "./components/flow/ReportScreen";
+import PricingModal from "./components/ui/PricingModal";
 import { AnalysisOut } from "../lib/types";
 import { getFaceLandmarkerVideo } from "../lib/mediapipe/faceMesh";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,6 +29,9 @@ export default function Home() {
   const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [analysisResult, setAnalysisResult] = useState<AnalysisOut | null>(null);
   const [errorToast, setErrorToast] = useState<string | null>(null);
+  
+  const [isPricingOpen, setIsPricingOpen] = useState(false);
+  const [pricingMessage, setPricingMessage] = useState("");
 
 
   // Preload MediaPipe camera model silently in the background
@@ -45,6 +49,15 @@ export default function Home() {
 
   const handleAnalysisError = useCallback((msg: string) => {
     trackEvent("scan_failed", { error_message: msg });
+    
+    // Check if it's a paywall error
+    if (msg.toLowerCase().includes("free scan") || msg.toLowerCase().includes("premium")) {
+      setPricingMessage(msg);
+      setIsPricingOpen(true);
+      setState("preview");
+      return;
+    }
+
     showError(msg);
     setState("preview");
   }, [showError]);
@@ -66,6 +79,10 @@ export default function Home() {
           onNext={() => {
             trackEvent("camera_opened");
             setState("capture");
+          }}
+          onUpgradeRequired={() => {
+            setPricingMessage("You have used all 3 free scans. Upgrade to Premium to continue analyzing your skin!");
+            setIsPricingOpen(true);
           }}
         />
       )}
@@ -137,6 +154,19 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <PricingModal 
+        isOpen={isPricingOpen} 
+        onClose={() => setIsPricingOpen(false)} 
+        message={pricingMessage}
+        onSuccess={() => {
+          if (photoBlob) {
+             setState("processing");
+          } else {
+             window.location.reload();
+          }
+        }}
+      />
     </main>
   );
 }
