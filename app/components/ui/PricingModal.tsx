@@ -36,7 +36,7 @@ export default function PricingModal({ isOpen, onClose, message, onSuccess }: Pr
       const options = {
         key: orderData.key_id,
         amount: orderData.amount,
-        currency: orderData.currency,
+        currency: orderData.currency as "INR",
         name: "SkinScan AI",
         description: `SkinScan ${planId === "lifetime" ? "Lifetime" : "Yearly"} Premium`,
         order_id: orderData.order_id,
