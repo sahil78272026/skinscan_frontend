@@ -3,7 +3,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { Activity, Info, X, Sparkles, AlertTriangle, User, ImageOff } from "lucide-react";
-import { getUserProfile } from "../../../lib/api-client";
+import { getUserProfile, UserProfile } from "../../../lib/api-client";
 import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
 interface Props {
@@ -134,7 +134,7 @@ export default function LandingScreen({
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -487,7 +487,7 @@ export default function LandingScreen({
                 </div>
                 <h3 className="font-display text-2xl font-bold text-gray-900 mb-2">Wait, are you sure?</h3>
                 <p className="text-gray-500 text-sm leading-relaxed px-2">
-                  You'll not be able to see the image of this analysis later if you do not store it.
+                  You&apos;ll not be able to see the image of this analysis later if you do not store it.
                 </p>
               </div>
               

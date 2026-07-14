@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAnalysisHistory, getUserProfile } from "../../lib/api-client";
+import { getAnalysisHistory, getUserProfile, UserProfile } from "../../lib/api-client";
 import { AnalysisOut } from "../../lib/types";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, Droplets, LogOut, ArrowRight, Activity, Sparkles, Crown } from "lucide-react";
+import { ArrowLeft, Clock, Droplets, LogOut, ArrowRight, Activity, Crown } from "lucide-react";
 import Link from "next/link";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -14,7 +14,7 @@ import PricingModal from "../components/ui/PricingModal";
 
 export default function Dashboard() {
   const [history, setHistory] = useState<AnalysisOut[]>([]);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);

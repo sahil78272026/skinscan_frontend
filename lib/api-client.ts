@@ -1,6 +1,6 @@
 import { AnalysisOut, Envelope } from "./types";
 
-interface UserProfile {
+export interface UserProfile {
   email: string;
   display_name?: string;
   consent_analysis: boolean;

@@ -40,7 +40,7 @@ export default function PricingModal({ isOpen, onClose, message, onSuccess }: Pr
         name: "SkinScan AI",
         description: `SkinScan ${planId === "lifetime" ? "Lifetime" : "Yearly"} Premium`,
         order_id: orderData.order_id,
-        handler: async function (response: any) {
+        handler: async function (response: Record<string, string>) {
           try {
             await verifyPaymentOrder({
               razorpay_order_id: response.razorpay_order_id,
@@ -63,9 +63,10 @@ export default function PricingModal({ isOpen, onClose, message, onSuccess }: Pr
       // 3. Open Razorpay Checkout
       const rzp = new Razorpay(options);
       rzp.open();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Payment failed:", err);
-      alert(err.message || "Payment initialization failed. Please try again.");
+      const errorMessage = err instanceof Error ? err.message : "Payment initialization failed. Please try again.";
+      alert(errorMessage);
     } finally {
       setLoading(null);
     }
