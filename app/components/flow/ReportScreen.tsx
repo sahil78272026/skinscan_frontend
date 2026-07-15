@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AnalysisOut, ZoneObservation } from "../../../lib/types";
 import { getFaceLandmarker } from "../../../lib/mediapipe/faceMesh";
 import { drawAnnotation } from "../../../lib/mediapipe/annotate";
-import { Sparkles, Download, Share2, Sun, Moon, Droplets, Heart, X, ZoomIn, ShoppingBag, ExternalLink } from "lucide-react";
+import { Sparkles, Download, Share2, Sun, Moon, Droplets, Heart, X, ZoomIn, ExternalLink } from "lucide-react";
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 interface Props {
