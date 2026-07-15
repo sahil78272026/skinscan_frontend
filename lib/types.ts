@@ -27,6 +27,15 @@ export interface Routine {
   evening: string[];
 }
 
+export interface Product {
+  name: string;
+  brand: string;
+  category: string;
+  description: string;
+  url?: string;
+  image_url?: string;
+}
+
 export interface AnalysisResult {
   image_quality: string;
   skin_type?: string;
@@ -37,6 +46,7 @@ export interface AnalysisResult {
   routine?: Routine;
   lifestyle_nudges: string[];
   encouragement_note?: string;
+  recommended_products?: Product[];
 }
 
 export interface AnalysisOut {

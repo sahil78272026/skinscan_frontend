@@ -32,18 +32,6 @@ const SEVERITY_STYLES: Record<string, { bg: string; text: string; dot: string; l
   severe:   { bg: "bg-terracotta-50",  text: "text-terracotta-700", dot: "bg-terracotta-500",  label: "Needs Attention" },
 };
 
-const DUMMY_PRODUCTS = [
-  { id: 1, name: "CeraVe Hydrating Facial Cleanser", type: "Cleanser", tags: ["dry", "dehydrated", "sensitive"], price: "$14.99" },
-  { id: 2, name: "CeraVe Renewing SA Cleanser", type: "Cleanser", tags: ["oily", "acne", "blemishes", "texture"], price: "$15.99" },
-  { id: 3, name: "The Ordinary Niacinamide 10%", type: "Serum", tags: ["pores", "oily", "texture"], price: "$6.00" },
-  { id: 4, name: "Paula's Choice 2% BHA", type: "Exfoliant", tags: ["blemishes", "pores", "texture", "acne"], price: "$34.00" },
-  { id: 5, name: "TruSkin Vitamin C Serum", type: "Serum", tags: ["dark spots", "dull", "uneven tone"], price: "$21.99" },
-  { id: 6, name: "La Roche-Posay Hyaluronic Acid", type: "Serum", tags: ["dehydrated", "dry", "fine lines"], price: "$39.99" },
-  { id: 7, name: "Neutrogena Hydro Boost Water Gel", type: "Moisturizer", tags: ["oily", "combination"], price: "$19.99" },
-  { id: 8, name: "CeraVe Moisturizing Cream", type: "Moisturizer", tags: ["dry", "sensitive"], price: "$17.99" },
-  { id: 9, name: "Supergoop! Unseen Sunscreen", type: "SPF", tags: ["all"], price: "$38.00" },
-  { id: 10, name: "CeraVe Eye Repair Cream", type: "Eye Cream", tags: ["dark circles", "under_eye"], price: "$14.50" },
-];
 
 // ZoneCard component removed, replaced by inline Carousel
 
@@ -203,27 +191,8 @@ export default function ReportScreen({ analysisResult, photoBlob, onClose, isRea
   const analysis = analysisResult.result_json;
   const zones = analysis.zones ? Object.entries(analysis.zones) : [];
 
-  // Match products based on analysis
-  const recommendedProducts = (() => {
-    const concerns = (analysis.top_concerns || []).map(c => c.toLowerCase());
-    const skinType = (analysis.skin_type || "").toLowerCase();
-    
-    // Create a combined string of all concerns to check against
-    const searchString = [...concerns, skinType].join(" ");
-
-    const matches = DUMMY_PRODUCTS.filter(p => {
-      if (p.tags.includes("all")) return true;
-      return p.tags.some(tag => searchString.includes(tag));
-    });
-    
-    // Sort so specific matches come first, generic ("all") comes last
-    matches.sort((a, b) => (a.tags.includes("all") ? 1 : 0) - (b.tags.includes("all") ? 1 : 0));
-    
-    // Fallback if no specific matches
-    if (matches.length === 0) return DUMMY_PRODUCTS.slice(0, 3);
-    
-    return matches.slice(0, 4); // Show top 4
-  })();
+  // Use real products from backend, fallback to empty array if none provided
+  const recommendedProducts = analysis.recommended_products || [];
 
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID!}>
@@ -529,38 +498,51 @@ export default function ReportScreen({ analysisResult, photoBlob, onClose, isRea
         )}
 
         {/* Product Recommendations */}
-        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.50 }}>
-          <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-            <ShoppingBag size={18} className="text-gold-500" />
-            Recommended Products
-          </h3>
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-5 px-5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {recommendedProducts.map((product) => (
-              <div 
-                key={product.id} 
-                className="flex-none w-40 snap-center rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden flex flex-col"
-              >
-                <div className="h-32 bg-gray-50 flex items-center justify-center border-b border-gray-100 relative">
-                  <div className="w-16 h-16 rounded-full bg-peach-100 flex items-center justify-center">
-                    <ShoppingBag className="text-peach-400" size={24} />
+        {recommendedProducts.length > 0 && (
+          <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.50 }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-display font-medium text-gray-900 flex items-center gap-2">
+                <Sparkles size={20} className="text-purple-400" />
+                Curated For You
+              </h3>
+            </div>
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-6 -mx-5 px-5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {recommendedProducts.map((product, idx) => (
+                <a 
+                  key={idx} 
+                  href={product.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-none w-56 snap-center rounded-[24px] bg-white border border-gray-100 shadow-sm overflow-hidden flex flex-col group hover:shadow-xl transition-all duration-300 active:scale-[0.98]"
+                >
+                  <div className="h-40 bg-gray-100 flex items-center justify-center border-b border-gray-50 relative overflow-hidden group-hover:opacity-90 transition-opacity duration-500">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={product.image_url} 
+                      alt={product.category}
+                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                    <span className="absolute bottom-3 left-3 text-[10px] font-bold uppercase tracking-widest text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full shadow-sm">
+                      {product.category}
+                    </span>
                   </div>
-                  <span className="absolute top-2 left-2 text-[9px] font-bold uppercase tracking-wider text-gray-500 bg-white px-2 py-0.5 rounded-full shadow-sm">
-                    {product.type}
-                  </span>
-                </div>
-                <div className="p-3 flex-1 flex flex-col">
-                  <h4 className="font-bold text-sm text-gray-900 leading-tight mb-1 line-clamp-2 flex-1">{product.name}</h4>
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
-                    <span className="text-terracotta-600 font-bold text-sm">{product.price}</span>
-                    <button className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center hover:scale-105 transition-transform">
-                      <ExternalLink size={12} />
-                    </button>
+                  <div className="p-4 flex-1 flex flex-col bg-white">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-1">{product.brand}</span>
+                    <h4 className="font-display font-medium text-base text-gray-900 leading-snug mb-1">{product.name}</h4>
+                    <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed flex-1 mt-1 mb-4">{product.description}</p>
+                    <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-50">
+                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider group-hover:text-purple-500 transition-colors">Shop Now</span>
+                      <button className="w-8 h-8 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-all duration-300">
+                        <ExternalLink size={14} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.section>
+                </a>
+              ))}
+            </div>
+          </motion.section>
+        )}
 
         {/* Lifestyle Nudges */}
         {analysis.lifestyle_nudges && analysis.lifestyle_nudges.length > 0 && (
