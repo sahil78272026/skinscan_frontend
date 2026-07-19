@@ -31,7 +31,7 @@ export const trackEvent = (eventName: string, metadataPayload?: Record<string, u
     metadata_payload: metadataPayload || {}
   };
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
   
