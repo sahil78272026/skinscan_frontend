@@ -137,6 +137,17 @@ export default function LandingScreen({
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Dynamic Hero State
+  const concerns = ["Breakouts?", "Dark Circles?", "Dryness?", "Fine Lines?", "Dullness?"];
+  const [concernIndex, setConcernIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setConcernIndex((prev) => (prev + 1) % concerns.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
     setHasToken(!!token);
@@ -259,9 +270,42 @@ export default function LandingScreen({
         </div>
       )}
       
-      <div className="flex-1 flex flex-col justify-center items-center w-full mt-12">
-        <h1 className="font-display text-5xl text-gray-900 mb-2 text-center tracking-tight">Skin<span className="text-terracotta-600 italic">Scan</span></h1>
-        <p className="text-gray-500 text-center mb-10 text-lg max-w-[280px]">Your personalized cosmetic skin analysis, powered by AI.</p>
+      <div className="flex-1 flex flex-col justify-center items-center w-full mt-8 md:mt-12">
+        <div className="mb-8 text-center">
+          {hasToken ? (
+            <>
+              <h1 className="font-display text-4xl md:text-5xl text-gray-900 mb-2 tracking-tight leading-tight">
+                Ready for your <br /> next <span className="text-terracotta-600 italic">Scan?</span>
+              </h1>
+              <p className="text-gray-500 text-base md:text-lg max-w-[320px] mx-auto mt-5 leading-relaxed">
+                Track your skin's progress with a personalized AI face scan.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="font-display text-4xl md:text-5xl text-gray-900 mb-2 tracking-tight leading-tight">
+                Don't know how <br /> to fix your
+                <div className="h-[1.2em] relative overflow-hidden mt-2 text-terracotta-600 italic font-bold">
+                  <AnimatePresence mode="popLayout">
+                    <motion.span
+                      key={concernIndex}
+                      initial={{ y: 40, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -40, opacity: 0 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      className="absolute inset-0 flex justify-center"
+                    >
+                      {concerns[concernIndex]}
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
+              </h1>
+              <p className="text-gray-500 text-base md:text-lg max-w-[320px] mx-auto mt-5 leading-relaxed">
+                Stop guessing. Get an AI face scan and personalized Ayurvedic routine in 30 seconds.
+              </p>
+            </>
+          )}
+        </div>
         
         <div className="w-full space-y-3 mb-12 relative z-10">
           {!isPreConsented && (
