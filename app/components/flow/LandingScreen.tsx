@@ -118,6 +118,9 @@ const ConsentCard = ({
   );
 };
 
+// Static Data for Dynamic Hero
+const CONCERNS = ["Breakouts?", "Dark Circles?", "Dryness?", "Fine Lines?", "Dullness?"];
+
 export default function LandingScreen({ 
   consentAnalysis, setConsentAnalysis, 
   consentPhoto, setConsentPhoto, 
@@ -138,12 +141,11 @@ export default function LandingScreen({
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Dynamic Hero State
-  const concerns = ["Breakouts?", "Dark Circles?", "Dryness?", "Fine Lines?", "Dullness?"];
   const [concernIndex, setConcernIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setConcernIndex((prev) => (prev + 1) % concerns.length);
+      setConcernIndex((prev) => (prev + 1) % CONCERNS.length);
     }, 2500);
     return () => clearInterval(interval);
   }, []);
@@ -278,13 +280,13 @@ export default function LandingScreen({
                 Ready for your <br /> next <span className="text-terracotta-600 italic">Scan?</span>
               </h1>
               <p className="text-gray-500 text-base md:text-lg max-w-[320px] mx-auto mt-5 leading-relaxed">
-                Track your skin's progress with a personalized AI face scan.
+                Track your skin&apos;s progress with a personalized AI face scan.
               </p>
             </>
           ) : (
             <>
               <h1 className="font-display text-4xl md:text-5xl text-gray-900 mb-2 tracking-tight leading-tight">
-                Don't know how <br /> to fix your
+                Don&apos;t know how <br /> to fix your
                 <div className="h-[1.2em] relative overflow-hidden mt-2 text-terracotta-600 italic font-bold">
                   <AnimatePresence mode="popLayout">
                     <motion.span
@@ -295,7 +297,7 @@ export default function LandingScreen({
                       transition={{ duration: 0.4, ease: "easeOut" }}
                       className="absolute inset-0 flex justify-center"
                     >
-                      {concerns[concernIndex]}
+                      {CONCERNS[concernIndex]}
                     </motion.span>
                   </AnimatePresence>
                 </div>

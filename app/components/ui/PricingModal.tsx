@@ -179,7 +179,7 @@ export default function PricingModal({ isOpen, onClose, message, onSuccess }: Pr
                 Hooray! 🎉
               </h2>
               <p className="text-slate-300 text-base mb-8">
-                Your account is now Premium! You've just unlocked:
+                Your account is now Premium! You&apos;ve just unlocked:
               </p>
 
               <div className="space-y-4 mb-8 text-left bg-slate-800/50 p-5 rounded-2xl border border-indigo-500/20">
@@ -224,7 +224,7 @@ export default function PricingModal({ isOpen, onClose, message, onSuccess }: Pr
               
               <h2 className="text-2xl font-bold text-white mb-3">Wait a second! ✨</h2>
               <p className="text-slate-300 text-base leading-relaxed mb-8">
-                You haven't used all your free scans available yet! We want you to experience the full value of our AI before you pay. Are you sure you still want to upgrade now?
+                You haven&apos;t used all your free scans available yet! We want you to experience the full value of our AI before you pay. Are you sure you still want to upgrade now?
               </p>
 
               <div className="space-y-3">
