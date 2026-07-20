@@ -61,6 +61,26 @@ export function drawAnnotation(
           cy = (minY + (maxY - minY) * 0.85) * h;
         }
         
+        // Fix the math for under_eye: it averages both eyes resulting in the nose bridge.
+        // We will point the label to the left eye (screen left) for clarity.
+        if (zoneName === "under_eye") {
+          let lx = 0, ly = 0, lCount = 0;
+          // The first 9 indices in the under_eye map correspond to the screen-left eye
+          const leftEyeIndices = indices.slice(0, 9);
+          leftEyeIndices.forEach(index => {
+            const pt = landmarks[index];
+            if (pt) {
+              lx += pt.x * w;
+              ly += pt.y * h;
+              lCount++;
+            }
+          });
+          if (lCount > 0) {
+            cx = lx / lCount;
+            cy = ly / lCount;
+          }
+        }
+        
         zoneCoords[zoneName] = {
           x: cx / w,
           y: cy / h,
@@ -72,25 +92,50 @@ export function drawAnnotation(
       // Highlight the zone delicately (Heatmap style instead of wireframe)
       // Only draw the polygon if it's severe or moderate
       if (observation.severity !== "none") {
-        ctx.beginPath();
-        indices.forEach((index, i) => {
-          const pt = landmarks[index];
-          if (!pt) return;
-          if (i === 0) {
-            ctx.moveTo(pt.x * w, pt.y * h);
-          } else {
-            ctx.lineTo(pt.x * w, pt.y * h);
-          }
-        });
-        ctx.closePath();
-        
         let fillColor = "rgba(255, 255, 255, 0.05)";
         if (observation.severity === "severe") fillColor = "rgba(224, 122, 95, 0.15)"; // Terracotta
         else if (observation.severity === "moderate") fillColor = "rgba(233, 184, 59, 0.15)"; // Gold
         
         ctx.fillStyle = fillColor;
-        ctx.fill();
-        // Removed the harsh white stroke completely for a softer look
+
+        if (zoneName === "under_eye") {
+          // Draw left eye polygon
+          ctx.beginPath();
+          indices.slice(0, 9).forEach((index, i) => {
+            const pt = landmarks[index];
+            if (pt) {
+              if (i === 0) ctx.moveTo(pt.x * w, pt.y * h);
+              else ctx.lineTo(pt.x * w, pt.y * h);
+            }
+          });
+          ctx.closePath();
+          ctx.fill();
+
+          // Draw right eye polygon
+          ctx.beginPath();
+          indices.slice(9).forEach((index, i) => {
+            const pt = landmarks[index];
+            if (pt) {
+              if (i === 0) ctx.moveTo(pt.x * w, pt.y * h);
+              else ctx.lineTo(pt.x * w, pt.y * h);
+            }
+          });
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          indices.forEach((index, i) => {
+            const pt = landmarks[index];
+            if (!pt) return;
+            if (i === 0) {
+              ctx.moveTo(pt.x * w, pt.y * h);
+            } else {
+              ctx.lineTo(pt.x * w, pt.y * h);
+            }
+          });
+          ctx.closePath();
+          ctx.fill();
+        }
       }
 
       if (count > 0 && observation.severity !== "none") {
